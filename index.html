@@ -224,7 +224,7 @@
 <body class="antialiased">
     
     <header>
-        <img src="./blatorh.png" alt="BlatoRH Logo" class="logo">
+        <img src="https://placehold.co/200x60/0E1C36/FFFFFF?text=BlatoRH" alt="BlatoRH Logo" class="logo">
     </header>
 
     <main class="app-container">
@@ -354,7 +354,7 @@
                         <p class="text-xl font-bold text-blue-800 mb-6">"Procedimiento para el Reporte de Incidentes de Seguridad"</p>
                         <p class="text-lg mb-2">En la fecha:</p>
                         <p class="text-xl font-semibold mb-6" id="diploma-date"></p>
-                        <img src="./blatorh.png" alt="BlatoRH Logo" class="blatorh-logo mx-auto">
+                        <img src="https://placehold.co/220x70/FFFFFF/0E1C36?text=BlatoRH" alt="BlatoRH Logo" class="blatorh-logo mx-auto">
                         <div class="signature-line"></div>
                         <p class="blatorh-signature">BlatoRH Group</p>
                         <p class="text-sm">Firma Autorizada</p>
@@ -394,7 +394,6 @@
         const SUPABASE_URL = 'https://zaxyokejvwupwmbhenso.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_-o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd'; 
 
-        // Initialize the Supabase client once, using the global 'supabase' object from the CDN
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // DOM Elements
@@ -448,7 +447,7 @@
         let selectedVoice = null;
         let userAnswers = new Array(5).fill(null);
 
-        // Data (Course content remains the same)
+        // Data
         const chapters = [
             { title: "1. Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que compromete la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software maliciosa que afecten la seguridad de los sistemas.</li></ul>`},
             { title: "2. Notificación Inmediata", content: `<p><strong>Responsabilidad de Notificación:</strong> El consultor que detecte el incidente debe notificarlo inmediatamente a su supervisor directo y al equipo de seguridad de la información de Blatorh Group.</p><p class="mt-4"><strong>Canales de Notificación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Correo electrónico:</strong> Enviar un correo al equipo de seguridad de la información con el asunto "Reporte de Incidente de Seguridad" y los detalles del incidente.</li><li><strong>Teléfono o mensajería interna:</strong> Utilizar los medios de comunicación internos para asegurarse de que el equipo de seguridad reciba la notificación lo antes posible.</li></ul>`},
@@ -504,7 +503,8 @@
 
             if (error) {
                 console.error('Error guardando progreso:', error.message);
-                showMessage('Error guardando progreso.', 'error');
+                showMessage('Error guardando progreso: ' + error.message, 'error');
+                throw error; // Re-throw the error to be caught by the caller
             } else {
                 console.log('Progreso guardado.');
             }
@@ -530,6 +530,7 @@
             progressBar.style.width = `${progress}%`;
             if (currentUser) {
                 currentUser.progress = currentChapterIndex;
+                saveUserProgressToSupabase(currentUser).catch(err => console.error("Failed to save progress on update", err));
             }
         }
         
@@ -737,28 +738,11 @@
                 showScreen('admin');
                 loadApprovedUsers();
             } else {
-                supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                    if (session) { // A session exists (could be anonymous or authenticated)
-                        const { user } = session;
-                        let userDataFromDB = await loadUserProgressFromSupabase(user.id);
-                        
-                        if (userDataFromDB) {
-                            currentUser = { ...userDataFromDB };
-                        } else {
-                           // This should not happen with the new flow, but as a fallback
-                           currentUser = { 
-                                id: user.id, 
-                                email: user.email || 'anon@example.com', // Provide a fallback for anon users
-                                name: '',
-                                surname: '',
-                                progress: 0,
-                                quizScore: null,
-                                completedDate: null,
-                                approved: false
-                           };
-                           await saveUserProgressToSupabase(currentUser);
-                        }
-
+                const storedUserId = localStorage.getItem('blatorh_course_userId');
+                if (storedUserId) {
+                    const userDataFromDB = await loadUserProgressFromSupabase(storedUserId);
+                    if (userDataFromDB) {
+                        currentUser = { ...userDataFromDB };
                         if (currentUser.approved) {
                             showScreen('diploma');
                             updateDiplomaContent();
@@ -767,15 +751,16 @@
                             currentChapterIndex = currentUser.progress || 0;
                             loadChapter();
                         }
-
-                    } else { // No session
-                        currentUser = null;
+                    } else {
+                        localStorage.removeItem('blatorh_course_userId');
                         showScreen('login');
-                        const totalCourseTime = calculateCourseDuration();
-                        courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
-                        welcomeTitle.textContent = "Bienvenido a la Capacitación";
                     }
-                });
+                } else {
+                    showScreen('login');
+                    const totalCourseTime = calculateCourseDuration();
+                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
+                    welcomeTitle.textContent = "Bienvenido a la Capacitación";
+                }
             }
         }
         
@@ -807,12 +792,10 @@
         }
         
         async function restartCourse(fullRestart = true) {
-             if (currentUser && fullRestart) {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) {
-                    console.error('Error al cerrar sesión:', error.message);
-                    showMessage('Error al cerrar sesión.', 'error');
-                }
+             if (fullRestart) {
+                localStorage.removeItem('blatorh_course_userId');
+                currentUser = null;
+                showScreen('login');
              }
         }
         
@@ -900,34 +883,46 @@
             const email = emailInput.value.trim();
 
             try {
-                // First, sign in anonymously to get a stable user ID
-                const { data: { user }, error: anonError } = await supabaseClient.auth.signInAnonymously();
+                const { data: existingUser, error: findError } = await supabaseClient
+                    .from('users_progress')
+                    .select('id, progress, approved')
+                    .eq('email', email)
+                    .single();
 
-                if (anonError) {
-                    throw anonError;
+                if (findError && findError.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+                    throw findError;
                 }
 
-                // Now that we have a user object, save the progress with the entered details
-                currentUser = {
-                    id: user.id,
-                    name: name,
-                    surname: surname,
-                    email: email, // We save the email for record-keeping, even though it's an anonymous auth
-                    progress: 0,
-                    quizScore: null,
-                    completedDate: null,
-                    approved: false
-                };
+                if (existingUser) {
+                    currentUser = { ...existingUser, name, surname, email }; // Use existing data but update name/surname
+                } else {
+                    currentUser = {
+                        id: crypto.randomUUID(),
+                        name: name,
+                        surname: surname,
+                        email: email,
+                        progress: 0,
+                        quizScore: null,
+                        completedDate: null,
+                        approved: false
+                    };
+                }
 
                 await saveUserProgressToSupabase(currentUser);
+                localStorage.setItem('blatorh_course_userId', currentUser.id);
 
-                // Manually trigger the UI update to show the course
-                showScreen('course');
-                loadChapter();
+                if (currentUser.approved) {
+                    showScreen('diploma');
+                    updateDiplomaContent();
+                } else {
+                    showScreen('course');
+                    currentChapterIndex = currentUser.progress || 0;
+                    loadChapter();
+                }
 
             } catch (err) {
                 console.error('Error en el ingreso:', err);
-                showMessage(`Error: ${err.message}`, 'error');
+                showMessage(`Error: ${err.message}. Asegúrate de que las Políticas de Seguridad (RLS) de tu tabla 'users_progress' en Supabase permiten inserciones públicas.`, 'error');
             } finally {
                 loginSubmitBtn.disabled = false;
                 loginSubmitBtn.querySelector('.btn-text').classList.remove('hidden');
@@ -960,13 +955,6 @@
         downloadDiplomaBtn.addEventListener('click', downloadDiploma);
         restartCourseBtn.addEventListener('click', () => restartCourse(true));
         exportCsvBtn.addEventListener('click', exportApprovedUsersToCsv);
-        
-        window.addEventListener('beforeunload', async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (currentUser && session) {
-                await saveUserProgressToSupabase(currentUser);
-            }
-        });
         
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
