@@ -233,7 +233,7 @@
             </div>
 
             <div id="login-screen" class="card screen">
-                <h2 class="text-3xl font-bold mb-2 text-center">Bienvenido a la Capacitación</h2>
+                <h2 class="text-3xl font-bold mb-2 text-center" id="welcome-title">Bienvenido a la Capacitación</h2>
                 <p id="welcome-message" class="text-center text-gray-300 mb-4">Procedimiento de Reporte de Incidentes</p>
                 
                 <div class="text-center mb-6">
@@ -276,10 +276,6 @@
                     <p id="chapter-number" class="text-yellow-300 font-semibold"></p>
                 </div>
                 
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-400">Progreso del Curso</span>
-                    <span id="time-progress" class="text-sm text-gray-400">0:00 / 0:00</span>
-                </div>
                 <div class="progress-bar-container mb-6">
                     <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
                 </div>
@@ -298,7 +294,7 @@
                 <p class="text-center text-gray-300 mb-4">Demuestra lo que has aprendido.</p>
                 
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-400">Progreso</span>
+                    <span class="text-sm text-gray-400">Progreso del Examen</span>
                 </div>
                 <div class="progress-bar-container mb-6">
                     <div id="quiz-progress-bar" class="progress-bar" style="width: 0%;"></div>
@@ -381,7 +377,7 @@
             admin: document.getElementById('admin-panel'),
         };
         const loginForm = document.getElementById('login-form');
-        const welcomeMessage = document.getElementById('welcome-message');
+        const welcomeTitle = document.getElementById('welcome-title');
         const courseDurationEstimate = document.getElementById('course-duration-estimate');
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
@@ -411,8 +407,6 @@
         const messageBox = document.getElementById('message-box');
         const messageText = document.getElementById('message-text');
         const diplomaLoading = document.getElementById('diploma-loading');
-        const timeProgress = document.getElementById('time-progress');
-        const timeIndicator = document.getElementById('time-indicator');
 
         // State
         let currentUser = null;
@@ -421,9 +415,6 @@
         let speechQueue = [];
         let wasManuallyStopped = false;
         let selectedVoice = null;
-        let courseStartTime = null;
-        let totalCourseTime = 0; 
-        let timeUpdateInterval = null;
         let userAnswers = new Array(5).fill(null);
 
         // Data
@@ -505,36 +496,6 @@
             return Math.ceil(finalDuration);
         }
         
-        function startProgressTimer() {
-            if (timeUpdateInterval) clearInterval(timeUpdateInterval);
-            
-            courseStartTime = Date.now();
-            timeProgress.textContent = `0:00 / ${totalCourseTime}:00`;
-            
-            timeUpdateInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - courseStartTime) / 1000);
-                const remaining = totalCourseTime * 60 - elapsed;
-                
-                if (remaining <= 0) {
-                    clearInterval(timeUpdateInterval);
-                    timeProgress.textContent = `${totalCourseTime}:00 / ${totalCourseTime}:00`;
-                    return;
-                }
-                
-                const mins = Math.floor(elapsed / 60);
-                const secs = elapsed % 60;
-                timeProgress.textContent = 
-                    `${mins}:${secs < 10 ? '0' : ''}${secs} / ${totalCourseTime}:00`;
-            }, 1000);
-        }
-        
-        function stopProgressTimer() {
-            if (timeUpdateInterval) {
-                clearInterval(timeUpdateInterval);
-                timeUpdateInterval = null;
-            }
-        }
-
         function loadChapter() {
             if (currentChapterIndex < chapters.length) {
                 const chapter = chapters[currentChapterIndex];
@@ -548,9 +509,7 @@
                 listenBtn.classList.add('pulsing-button');
                 
                 updateProgressBar();
-                startProgressTimer();
             } else {
-                stopProgressTimer();
                 startQuiz();
             }
         }
@@ -742,9 +701,9 @@
                         loadChapter();
                     }
                 } else {
-                    totalCourseTime = calculateCourseDuration();
-                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
                     showScreen('login');
+                    const totalCourseTime = calculateCourseDuration();
+                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
                 }
             }
         }
@@ -777,13 +736,13 @@
         }
         
         function restartCourse(fullRestart = true) {
-             stopProgressTimer();
-             
              if (currentUser) {
                 if (fullRestart) {
                     localStorage.removeItem('currentUser');
                     currentUser = null;
                     showScreen('login');
+                    const totalCourseTime = calculateCourseDuration();
+                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
                 } else {
                     currentUser.progress = 0;
                     currentUser.quizScore = null;
@@ -796,6 +755,8 @@
                 }
             } else {
                 showScreen('login');
+                const totalCourseTime = calculateCourseDuration();
+                courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
             }
         }
         
@@ -862,8 +823,7 @@
             e.preventDefault();
             currentUser = { name: nameInput.value.trim(), surname: surnameInput.value.trim(), email: emailInput.value.trim(), progress: 0, quizScore: null, completedDate: null, approved: false };
             saveUserData(currentUser);
-            welcomeMessage.textContent = `Bienvenido, ${currentUser.name}`;
-            timeIndicator.classList.add('hidden');
+            welcomeTitle.textContent = `¡Bienvenido, ${currentUser.name}!`;
             showScreen('course');
             loadChapter();
             showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
