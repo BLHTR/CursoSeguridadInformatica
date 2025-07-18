@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Curso BlatoRH Group - Versión Final</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF and html2canvas for diploma generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Custom styles for the definitive version */
         @keyframes pulse-glow {
@@ -220,6 +225,7 @@
     <main class="app-container">
         <div class="main-content-area">
 
+            <!-- Loading overlay for diploma -->
             <div id="diploma-loading" class="hidden absolute inset-0 bg-black/70 z-50 flex items-center justify-center">
                 <div class="text-center p-6 bg-gray-800 rounded-xl">
                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4"></div>
@@ -227,11 +233,13 @@
                 </div>
             </div>
 
+            <!-- Message Box -->
             <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 hidden" role="alert">
                 <span id="message-text"></span>
                 <button onclick="document.getElementById('message-box').classList.add('hidden')" class="ml-4 font-bold">&times;</button>
             </div>
 
+            <!-- Login/Registration Screen -->
             <div id="login-screen" class="card screen">
                 <h2 class="text-3xl font-bold mb-2 text-center" id="welcome-title">Bienvenido a la Capacitación</h2>
                 <p id="welcome-message" class="text-center text-gray-300 mb-4">Procedimiento de Reporte de Incidentes</p>
@@ -259,7 +267,11 @@
                         <input type="email" id="email" class="input-field" required pattern=".*@blatorh\.com$">
                         <p class="mt-2 text-sm text-gray-400">Debe ser una dirección de correo terminada en @blatorh.com</p>
                     </div>
-                    <button type="submit" class="btn-primary w-full !mt-8">Comenzar Curso</button>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-300">Contraseña</label>
+                        <input type="password" id="password" class="input-field" required>
+                    </div>
+                    <button type="submit" class="btn-primary w-full !mt-8">Registrarse / Iniciar Sesión</button>
                     
                     <button type="button" onclick="downloadResourcePdf()" class="btn-secondary w-full mt-4">
                         <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,6 +282,7 @@
                 </form>
             </div>
 
+            <!-- Course Screen -->
             <div id="course-screen" class="card screen hidden">
                 <div class="mb-4">
                     <h2 class="text-2xl md:text-3xl font-bold">Reporte de Incidentes de Seguridad</h2>
@@ -282,13 +295,15 @@
                 
                 <h3 id="chapter-title" class="text-2xl font-semibold mb-4"></h3>
                 <div id="chapter-content" class="prose prose-invert max-w-none mb-8 text-gray-300 text-lg">
-                    </div>
+                    <!-- Chapter content will be loaded here -->
+                </div>
                 <div class="flex justify-between items-center mt-8 border-t border-gray-700 pt-6">
                     <button id="listen-btn" class="btn-secondary">Escuchar</button>
                     <button id="next-btn" class="btn-primary" disabled>Siguiente</button>
                 </div>
             </div>
 
+            <!-- Quiz Screen -->
             <div id="quiz-screen" class="card screen hidden">
                 <h2 class="text-3xl font-bold mb-2 text-center">Evaluación Final</h2>
                 <p class="text-center text-gray-300 mb-4">Demuestra lo que has aprendido.</p>
@@ -301,7 +316,8 @@
                 </div>
 
                 <div id="quiz-content" class="min-h-[30vh]">
-                    </div>
+                    <!-- Quiz question will be loaded here -->
+                </div>
 
                 <div id="quiz-navigation" class="flex justify-center space-x-4 mt-8">
                     <button id="prev-question-btn" class="btn-secondary">Anterior</button>
@@ -310,6 +326,7 @@
                  <button id="submit-quiz-btn" class="btn-primary w-full mt-8 hidden">Finalizar y Ver Resultados</button>
             </div>
             
+            <!-- Quiz Result Screen -->
             <div id="result-screen" class="card screen hidden text-center">
                  <h2 class="text-3xl font-bold mb-4">Resultados de la Evaluación</h2>
                  <p class="text-5xl font-bold mb-4" id="result-score"></p>
@@ -321,6 +338,7 @@
                  </div>
             </div>
 
+            <!-- Diploma Screen -->
             <div id="diploma-screen" class="card screen hidden">
                 <h2 class="text-3xl font-bold mb-6 text-center">¡Felicitaciones, has completado el curso!</h2>
                 <div id="diploma-content-wrapper" class="p-4 bg-gray-800 rounded-lg">
@@ -344,6 +362,7 @@
                 </div>
             </div>
 
+            <!-- Admin Panel -->
             <div id="admin-panel" class="card screen hidden">
                  <h2 class="text-2xl font-bold mb-6 text-center">Panel de Administración</h2>
                  <button id="export-csv-btn" class="btn-primary mb-4">Exportar Aprobados (CSV)</button>
@@ -367,6 +386,12 @@
     </main>
 
     <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://zaxyokejvwupwmbhenso.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_-o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd';
+
+        let supabase; // Declarar la variable globalmente
+
         // DOM Elements
         const screens = {
             login: document.getElementById('login-screen'),
@@ -382,6 +407,7 @@
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
         const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password'); // Nuevo campo de contraseña
         const chapterNumberDisplay = document.getElementById('chapter-number');
         const progressBar = document.getElementById('progress-bar');
         const chapterTitleDisplay = document.getElementById('chapter-title');
@@ -409,7 +435,7 @@
         const diplomaLoading = document.getElementById('diploma-loading');
 
         // State
-        let currentUser = null;
+        let currentUser = null; // Ahora almacenará el objeto de usuario de Supabase y sus datos de progreso
         let currentChapterIndex = 0;
         let currentQuestionIndex = 0;
         let speechQueue = [];
@@ -419,7 +445,7 @@
 
         // Data
         const chapters = [
-            { title: "1. Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que comprometa la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software malicioso que afecten la seguridad de los sistemas.</li></ul>`},
+            { title: "1. Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que compromete la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software maliciosa que afecten la seguridad de los sistemas.</li></ul>`},
             { title: "2. Notificación Inmediata", content: `<p><strong>Responsabilidad de Notificación:</strong> El consultor que detecte el incidente debe notificarlo inmediatamente a su supervisor directo y al equipo de seguridad de la información de Blatorh Group.</p><p class="mt-4"><strong>Canales de Notificación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Correo electrónico:</strong> Enviar un correo al equipo de seguridad de la información con el asunto "Reporte de Incidente de Seguridad" y los detalles del incidente.</li><li><strong>Teléfono o mensajería interna:</strong> Utilizar los medios de comunicación internos para asegurarse de que el equipo de seguridad reciba la notificación lo antes posible.</li></ul>`},
             { title: "3. Documentación del Incidente", content: `<p><strong>Información Requerida:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Descripción del incidente:</strong> Explicar lo sucedido, incluyendo cómo se detectó el incidente y su impacto inicial.</li><li><strong>Fecha y hora:</strong> Registrar la fecha y hora exactas en que se detectó el incidente y cuándo se notificó.</li><li><strong>Sistemas o información afectados:</strong> Detallar qué sistemas o datos se vieron comprometidos.</li><li><strong>Acciones tomadas:</strong> Describir cualquier acción inmediata tomada para mitigar el impacto del incidente.</li></ul>`},
             { title: "4. Evaluación Inicial", content: `<p><strong>Responsabilidad de Evaluación:</strong> El equipo de seguridad de la información realizará una evaluación inicial para determinar la gravedad del incidente y el alcance del daño.</p><p class="mt-4"><strong>Criterios de Evaluación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Gravedad:</strong> Determinar si el incidente es menor, moderado o crítico.</li><li><strong>Alcance:</strong> Identificar cuántos sistemas, datos o personas se ven afectados.</li><li><strong>Impacto:</strong> Evaluar el impacto potencial en la operación de Blatorh Group y sus clientes.</li></ul>`},
@@ -456,18 +482,51 @@
             setTimeout(() => { messageBox.classList.add('hidden'); }, 4000);
         }
 
-        function saveUserData(user) {
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            const users = JSON.parse(localStorage.getItem('blatorhUsers') || '[]');
-            const existingUserIndex = users.findIndex(u => u.email === user.email);
-            if (existingUserIndex > -1) users[existingUserIndex] = user;
-            else users.push(user);
-            localStorage.setItem('blatorhUsers', JSON.stringify(users));
+        /**
+         * Guarda o actualiza el progreso del usuario en Supabase.
+         * Utiliza upsert para insertar si no existe o actualizar si ya existe.
+         * @param {object} user - Objeto de usuario con los datos a guardar.
+         */
+        async function saveUserProgressToSupabase(user) {
+            const { data, error } = await supabase
+                .from('users_progress')
+                .upsert({ 
+                    id: user.id, // El ID de Supabase Auth
+                    name: user.name,
+                    surname: user.surname,
+                    email: user.email,
+                    progress: user.progress,
+                    quiz_score: user.quizScore,
+                    completed_date: user.completedDate,
+                    approved: user.approved
+                }, { onConflict: 'id' }); // Conflictar por el ID de Supabase Auth
+
+            if (error) {
+                console.error('Error guardando progreso:', error.message);
+                showMessage('Error guardando progreso.', 'error');
+            } else {
+                console.log('Progreso guardado:', data);
+            }
         }
 
-        function loadUserData() {
-            const user = localStorage.getItem('currentUser');
-            return user ? JSON.parse(user) : null;
+        /**
+         * Carga el progreso del usuario desde Supabase.
+         * @param {string} userId - El ID del usuario autenticado en Supabase.
+         * @returns {object|null} - El objeto de usuario con su progreso o null si no se encuentra.
+         */
+        async function loadUserProgressFromSupabase(userId) {
+            const { data, error } = await supabase
+                .from('users_progress')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 es "no rows found"
+                console.error('Error cargando progreso:', error.message);
+                showMessage('Error cargando progreso.', 'error');
+                return null;
+            }
+            return data;
         }
 
         function updateProgressBar() {
@@ -475,7 +534,8 @@
             progressBar.style.width = `${progress}%`;
             if (currentUser) {
                 currentUser.progress = currentChapterIndex;
-                saveUserData(currentUser);
+                // No se guarda inmediatamente en Supabase aquí para evitar llamadas excesivas.
+                // Se guardará al finalizar el curso o al salir de la página.
             }
         }
         
@@ -487,13 +547,13 @@
             });
             // Tasa de lectura promedio de 200 palabras por minuto
             const readingTimeInMinutes = wordCount / 200;
-            const extraTime = readingTimeInMinutes * 0.10;
-            const totalDuration = readingTimeInMinutes + extraTime;
+            const extraTime = readingTimeInMinutes * 0.10; // 10% extra para pausas
+            const totalContentDuration = readingTimeInMinutes + extraTime;
             
-            // Sumar tiempo estimado para el quiz (2 minutos por pregunta)
-            const quizTime = quizQuestions.length * 2;
-            const finalDuration = totalDuration + quizTime;
-            return Math.ceil(finalDuration);
+            // Sumar tiempo estimado para el quiz (ej. 1 minuto por pregunta para leer y responder)
+            const quizTime = quizQuestions.length * 1; 
+            const finalDuration = totalContentDuration + quizTime;
+            return Math.ceil(finalDuration); // Redondear hacia arriba al minuto más cercano
         }
         
         function loadChapter() {
@@ -618,7 +678,7 @@
 
             document.querySelectorAll('.quiz-option').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const selectedIndex = parseInt(e.currentTarget.dataset.answer-index);
+                    const selectedIndex = parseInt(e.currentTarget.dataset.answerIndex);
                     userAnswers[currentQuestionIndex] = selectedIndex;
                     document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
                     e.currentTarget.classList.add('selected');
@@ -646,17 +706,18 @@
             quizProgressBar.style.width = `${progress}%`;
         }
         
-        function submitQuiz() {
+        async function submitQuiz() {
             let correctAnswers = 0;
             userAnswers.forEach((answer, index) => {
                 if (answer === quizQuestions[index].answer) correctAnswers++;
             });
             const score = (correctAnswers / quizQuestions.length) * 100;
+            
             if (currentUser) {
                 currentUser.quizScore = score;
                 currentUser.completedDate = new Date().toLocaleDateString('es-AR');
                 currentUser.approved = score >= 80;
-                saveUserData(currentUser);
+                await saveUserProgressToSupabase(currentUser); // Guardar el resultado en Supabase
             }
             showResultScreen(score);
         }
@@ -675,7 +736,10 @@
             }).join('');
         }
 
-        function initializeApp() {
+        async function initializeApp() {
+            // Inicializar Supabase aquí para asegurar que esté definido
+            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
             if ('speechSynthesis' in window) {
                 loadAndSetVoice();
                 if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -690,21 +754,58 @@
                 showScreen('admin');
                 loadApprovedUsers();
             } else {
-                currentUser = loadUserData();
-                if (currentUser) {
-                    if (currentUser.approved) {
-                        showScreen('diploma');
-                        updateDiplomaContent();
+                // Escuchar cambios en el estado de autenticación de Supabase
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (session) {
+                        // Usuario logueado
+                        const { user } = session;
+                        const userDataFromDB = await loadUserProgressFromSupabase(user.id);
+                        
+                        if (userDataFromDB) {
+                            currentUser = { 
+                                id: user.id, 
+                                name: userDataFromDB.name, 
+                                surname: userDataFromDB.surname, 
+                                email: userDataFromDB.email, 
+                                progress: userDataFromDB.progress, 
+                                quizScore: userDataFromDB.quiz_score, 
+                                completedDate: userDataFromDB.completed_date, 
+                                approved: userDataFromDB.approved 
+                            };
+                        } else {
+                            // Si el usuario se acaba de registrar y no tiene datos de progreso en la DB
+                            currentUser = { 
+                                id: user.id, 
+                                name: user.user_metadata.name || '', 
+                                surname: user.user_metadata.surname || '', 
+                                email: user.email, 
+                                progress: 0, 
+                                quizScore: null, 
+                                completedDate: null, 
+                                approved: false 
+                            };
+                            await saveUserProgressToSupabase(currentUser); // Guardar el registro inicial
+                        }
+
+                        if (currentUser.approved) {
+                            showScreen('diploma');
+                            updateDiplomaContent();
+                        } else {
+                            showScreen('course');
+                            currentChapterIndex = currentUser.progress || 0;
+                            loadChapter();
+                        }
+                        showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
+
                     } else {
-                        showScreen('course');
-                        currentChapterIndex = currentUser.progress || 0;
-                        loadChapter();
+                        // No hay usuario logueado
+                        currentUser = null;
+                        showScreen('login');
+                        const totalCourseTime = calculateCourseDuration();
+                        courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
+                        welcomeTitle.textContent = "Bienvenido a la Capacitación"; // Restablecer título
                     }
-                } else {
-                    showScreen('login');
-                    const totalCourseTime = calculateCourseDuration();
-                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
-                }
+                });
             }
         }
         
@@ -735,60 +836,69 @@
             }
         }
         
-        function restartCourse(fullRestart = true) {
-             if (currentUser) {
-                if (fullRestart) {
-                    localStorage.removeItem('currentUser');
-                    currentUser = null;
-                    showScreen('login');
-                    const totalCourseTime = calculateCourseDuration();
-                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
-                } else {
-                    currentUser.progress = 0;
-                    currentUser.quizScore = null;
-                    currentUser.completedDate = null;
-                    currentUser.approved = false;
-                    saveUserData(currentUser);
-                    currentChapterIndex = 0;
-                    showScreen('course');
-                    loadChapter();
+        async function restartCourse(fullRestart = true) {
+             if (currentUser && fullRestart) {
+                // Cerrar sesión en Supabase Auth
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Error al cerrar sesión:', error.message);
+                    showMessage('Error al cerrar sesión.', 'error');
                 }
-            } else {
-                showScreen('login');
-                const totalCourseTime = calculateCourseDuration();
-                courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
-            }
+             }
+             // La función initializeApp se encargará de mostrar la pantalla de login
+             // y recalcular el tiempo estimado al detectar que no hay sesión.
         }
         
-        function loadApprovedUsers() {
-            const users = JSON.parse(localStorage.getItem('blatorhUsers') || '[]');
-            approvedUsersTableBody.innerHTML = '';
-            const approved = users.filter(user => user.approved);
+        async function loadApprovedUsers() {
+            // NOTA IMPORTANTE: Para que esta función muestre *todos* los usuarios aprobados
+            // en el panel de administración, necesitarás ajustar las políticas de RLS
+            // en tu tabla `users_progress` en Supabase para permitir el SELECT a un rol
+            // o usuario administrador específico. La política actual solo permite
+            // a los usuarios ver sus propios registros.
+            const { data: users, error } = await supabase
+                .from('users_progress')
+                .select('*')
+                .eq('approved', true);
 
-            if (approved.length === 0) {
+            if (error) {
+                console.error('Error cargando usuarios aprobados:', error.message);
+                showMessage('Error cargando usuarios aprobados.', 'error');
+                return;
+            }
+
+            approvedUsersTableBody.innerHTML = '';
+            if (users.length === 0) {
                 approvedUsersTableBody.innerHTML = '<tr><td colspan="5" class="py-3 px-6 text-center">No hay usuarios aprobados aún.</td></tr>';
                 return;
             }
 
-            approved.forEach(user => {
+            users.forEach(user => {
                 const row = document.createElement('tr');
                 row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-700');
                 row.innerHTML = `
                     <td class="py-3 px-6 text-left whitespace-nowrap">${user.name}</td>
                     <td class="py-3 px-6 text-left whitespace-nowrap">${user.surname}</td>
                     <td class="py-3 px-6 text-left whitespace-nowrap">${user.email}</td>
-                    <td class="py-3 px-6 text-left">${user.quizScore ? user.quizScore.toFixed(0) + '%' : 'N/A'}</td>
-                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.completedDate || 'N/A'}</td>
+                    <td class="py-3 px-6 text-left">${user.quiz_score ? user.quiz_score.toFixed(0) + '%' : 'N/A'}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.completed_date || 'N/A'}</td>
                 `;
                 approvedUsersTableBody.appendChild(row);
             });
         }
         
         function exportApprovedUsersToCsv() {
-            const users = JSON.parse(localStorage.getItem('blatorhUsers') || '[]');
-            const approved = users.filter(user => user.approved);
+            // NOTA: Esta función exportará solo los datos que el usuario actual puede ver
+            // según las políticas de RLS de Supabase. Para exportar todos los datos,
+            // la función loadApprovedUsers debe ser capaz de acceder a ellos.
+            const users = Array.from(approvedUsersTableBody.rows).map(row => ({
+                name: row.cells[0].textContent,
+                surname: row.cells[1].textContent,
+                email: row.cells[2].textContent,
+                quizScore: row.cells[3].textContent,
+                completedDate: row.cells[4].textContent
+            }));
 
-            if (approved.length === 0) {
+            if (users.length === 0 || (users.length === 1 && users[0].name === 'No hay usuarios aprobados aún.')) {
                 showMessage('No hay usuarios aprobados para exportar.', 'error');
                 return;
             }
@@ -796,8 +906,8 @@
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Nombre,Apellido,Email,Score,Fecha de Finalización\n";
 
-            approved.forEach(user => {
-                const row = [ user.name, user.surname, user.email, user.quizScore ? user.quizScore.toFixed(0) + '%' : 'N/A', user.completedDate || 'N/A' ].map(item => `"${item}"`).join(",");
+            users.forEach(user => {
+                const row = [ user.name, user.surname, user.email, user.quizScore, user.completedDate ].map(item => `"${item}"`).join(",");
                 csvContent += row + "\n";
             });
 
@@ -819,14 +929,45 @@
         }
 
         // Event Listeners
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            currentUser = { name: nameInput.value.trim(), surname: surnameInput.value.trim(), email: emailInput.value.trim(), progress: 0, quizScore: null, completedDate: null, approved: false };
-            saveUserData(currentUser);
-            welcomeTitle.textContent = `¡Bienvenido, ${currentUser.name}!`;
-            showScreen('course');
-            loadChapter();
-            showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
+            const name = nameInput.value.trim();
+            const surname = surnameInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            // Intentar registrar o iniciar sesión
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        name: name,
+                        surname: surname
+                    }
+                }
+            });
+
+            if (error) {
+                if (error.message.includes('User already registered')) {
+                    // Si el usuario ya está registrado, intentar iniciar sesión
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password,
+                    });
+                    if (signInError) {
+                        console.error('Error al iniciar sesión:', signInError.message);
+                        showMessage(`Error al iniciar sesión: ${signInError.message}`, 'error');
+                    } else {
+                        // La lógica de onAuthStateChange manejará la redirección y carga de datos
+                    }
+                } else {
+                    console.error('Error al registrar usuario:', error.message);
+                    showMessage(`Error al registrar: ${error.message}`, 'error');
+                }
+            } else if (data.user) {
+                // Registro exitoso, la lógica de onAuthStateChange manejará la redirección y carga de datos
+            }
         });
 
         listenBtn.addEventListener('click', handleListen);
@@ -852,13 +993,13 @@
         restartQuizBtn.addEventListener('click', startQuiz);
         diplomaBtn.addEventListener('click', () => { showScreen('diploma'); updateDiplomaContent(); });
         downloadDiplomaBtn.addEventListener('click', downloadDiploma);
-        restartCourseBtn.addEventListener('click', () => restartCourse(true));
+        restartCourseBtn.addEventListener('click', () => restartCourse(true)); // fullRestart = true para cerrar sesión
         exportCsvBtn.addEventListener('click', exportApprovedUsersToCsv);
         
-        // Guardar progreso al salir
-        window.addEventListener('beforeunload', () => {
-            if (currentUser) {
-                saveUserData(currentUser);
+        // Guardar progreso al salir (solo si hay un usuario autenticado)
+        window.addEventListener('beforeunload', async () => {
+            if (currentUser && supabase.auth.getSession()) {
+                await saveUserProgressToSupabase(currentUser);
             }
         });
         
