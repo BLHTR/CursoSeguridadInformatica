@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Curso BlatoRH Group - Versión Final</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jsPDF and html2canvas for diploma generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -223,7 +220,6 @@
     <main class="app-container">
         <div class="main-content-area">
 
-            <!-- Loading overlay for diploma -->
             <div id="diploma-loading" class="hidden absolute inset-0 bg-black/70 z-50 flex items-center justify-center">
                 <div class="text-center p-6 bg-gray-800 rounded-xl">
                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4"></div>
@@ -231,23 +227,21 @@
                 </div>
             </div>
 
-            <!-- Message Box -->
             <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 hidden" role="alert">
                 <span id="message-text"></span>
                 <button onclick="document.getElementById('message-box').classList.add('hidden')" class="ml-4 font-bold">&times;</button>
             </div>
 
-            <!-- Login/Registration Screen -->
             <div id="login-screen" class="card screen">
                 <h2 class="text-3xl font-bold mb-2 text-center">Bienvenido a la Capacitación</h2>
-                <p class="text-center text-gray-300 mb-4">Procedimiento de Reporte de Incidentes</p>
+                <p id="welcome-message" class="text-center text-gray-300 mb-4">Procedimiento de Reporte de Incidentes</p>
                 
                 <div class="text-center mb-6">
-                    <div class="time-indicator">
+                    <div id="time-indicator" class="time-indicator">
                         <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
                         </svg>
-                        <span>Tiempo estimado: 20 minutos</span>
+                        <span id="course-duration-estimate"></span>
                     </div>
                 </div>
                 
@@ -276,7 +270,6 @@
                 </form>
             </div>
 
-            <!-- Course Screen -->
             <div id="course-screen" class="card screen hidden">
                 <div class="mb-4">
                     <h2 class="text-2xl md:text-3xl font-bold">Reporte de Incidentes de Seguridad</h2>
@@ -284,8 +277,8 @@
                 </div>
                 
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm text-gray-400">Progreso</span>
-                    <span id="time-progress" class="text-sm text-gray-400">0:00 / 20:00</span>
+                    <span class="text-sm text-gray-400">Progreso del Curso</span>
+                    <span id="time-progress" class="text-sm text-gray-400">0:00 / 0:00</span>
                 </div>
                 <div class="progress-bar-container mb-6">
                     <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
@@ -293,30 +286,34 @@
                 
                 <h3 id="chapter-title" class="text-2xl font-semibold mb-4"></h3>
                 <div id="chapter-content" class="prose prose-invert max-w-none mb-8 text-gray-300 text-lg">
-                    <!-- Chapter content will be loaded here -->
-                </div>
+                    </div>
                 <div class="flex justify-between items-center mt-8 border-t border-gray-700 pt-6">
                     <button id="listen-btn" class="btn-secondary">Escuchar</button>
                     <button id="next-btn" class="btn-primary" disabled>Siguiente</button>
                 </div>
             </div>
 
-            <!-- Quiz Screen -->
             <div id="quiz-screen" class="card screen hidden">
                 <h2 class="text-3xl font-bold mb-2 text-center">Evaluación Final</h2>
-                <p class="text-center text-gray-300 mb-8">Demuestra lo que has aprendido.</p>
-                <div id="quiz-content" class="min-h-[30vh]">
-                    <!-- Quiz question will be loaded here -->
+                <p class="text-center text-gray-300 mb-4">Demuestra lo que has aprendido.</p>
+                
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-400">Progreso</span>
                 </div>
-                <div id="quiz-navigation" class="flex justify-between items-center mt-8">
+                <div class="progress-bar-container mb-6">
+                    <div id="quiz-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                </div>
+
+                <div id="quiz-content" class="min-h-[30vh]">
+                    </div>
+
+                <div id="quiz-navigation" class="flex justify-center space-x-4 mt-8">
                     <button id="prev-question-btn" class="btn-secondary">Anterior</button>
-                    <div id="quiz-progress" class="text-center font-semibold"></div>
                     <button id="next-question-btn" class="btn-primary">Siguiente</button>
                 </div>
                  <button id="submit-quiz-btn" class="btn-primary w-full mt-8 hidden">Finalizar y Ver Resultados</button>
             </div>
             
-            <!-- Quiz Result Screen -->
             <div id="result-screen" class="card screen hidden text-center">
                  <h2 class="text-3xl font-bold mb-4">Resultados de la Evaluación</h2>
                  <p class="text-5xl font-bold mb-4" id="result-score"></p>
@@ -328,7 +325,6 @@
                  </div>
             </div>
 
-            <!-- Diploma Screen -->
             <div id="diploma-screen" class="card screen hidden">
                 <h2 class="text-3xl font-bold mb-6 text-center">¡Felicitaciones, has completado el curso!</h2>
                 <div id="diploma-content-wrapper" class="p-4 bg-gray-800 rounded-lg">
@@ -352,7 +348,6 @@
                 </div>
             </div>
 
-            <!-- Admin Panel -->
             <div id="admin-panel" class="card screen hidden">
                  <h2 class="text-2xl font-bold mb-6 text-center">Panel de Administración</h2>
                  <button id="export-csv-btn" class="btn-primary mb-4">Exportar Aprobados (CSV)</button>
@@ -386,6 +381,8 @@
             admin: document.getElementById('admin-panel'),
         };
         const loginForm = document.getElementById('login-form');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const courseDurationEstimate = document.getElementById('course-duration-estimate');
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
         const emailInput = document.getElementById('email');
@@ -395,11 +392,11 @@
         const chapterContentDisplay = document.getElementById('chapter-content');
         const listenBtn = document.getElementById('listen-btn');
         const nextBtn = document.getElementById('next-btn');
+        const quizProgressBar = document.getElementById('quiz-progress-bar');
         const quizContent = document.getElementById('quiz-content');
         const prevQuestionBtn = document.getElementById('prev-question-btn');
         const nextQuestionBtn = document.getElementById('next-question-btn');
         const submitQuizBtn = document.getElementById('submit-quiz-btn');
-        const quizProgress = document.getElementById('quiz-progress');
         const resultScore = document.getElementById('result-score');
         const resultMessage = document.getElementById('result-message');
         const resultSummary = document.getElementById('result-summary');
@@ -415,6 +412,7 @@
         const messageText = document.getElementById('message-text');
         const diplomaLoading = document.getElementById('diploma-loading');
         const timeProgress = document.getElementById('time-progress');
+        const timeIndicator = document.getElementById('time-indicator');
 
         // State
         let currentUser = null;
@@ -424,7 +422,7 @@
         let wasManuallyStopped = false;
         let selectedVoice = null;
         let courseStartTime = null;
-        let totalCourseTime = 20 * 60; // 20 minutos en segundos
+        let totalCourseTime = 0; 
         let timeUpdateInterval = null;
         let userAnswers = new Array(5).fill(null);
 
@@ -439,7 +437,7 @@
             { title: "7. Recuperación y Restauración", content: `<p><strong>Restauración de Sistemas:</strong> Una vez contenido el incidente, proceder a restaurar los sistemas y datos a su estado normal.</p><p class="mt-4"><strong>Revisión de Backups:</strong> Verificar la integridad de los backups y, si es necesario, restaurar desde una copia de seguridad segura.</p><p class="mt-4"><strong>Validación:</strong> Asegurar que todos los sistemas vuelvan a estar operativos y sin vulnerabilidades.</p>`},
             { title: "8. Análisis Post-Incidente", content: `<p><strong>Revisión y Análisis:</strong> El equipo de seguridad debe realizar una revisión completa del incidente para entender las causas raíz y cómo se puede prevenir en el futuro.</p><p class="mt-4"><strong>Lecciones Aprendidas:</strong> Documentar las lecciones aprendidas y mejorar los procedimientos y políticas de seguridad.</p>`},
             { title: "9. Reporte Final y Archivo", content: `<p><strong>Elaboración de un Reporte Final:</strong> Crear un reporte final que incluya todos los detalles del incidente, desde su detección hasta la resolución.</p><p class="mt-4"><strong>Archivo Seguro:</strong> Guardar el reporte en un lugar seguro y accesible para futuras referencias y auditorías.</p>`},
-            { title: "10. Formación y Mejora Continua", content: `<p><strong>Capacitación:</strong> Realizar sesiones de formación con los consultores y empleados para asegurar que todos estén al tanto del procedimiento.</p><p class="mt-4"><strong>Simulacros de Incidentes:</strong> Llevar a cabo simulacros periódicos para evaluar la preparación del equipo y mejorar la respuesta a incidentes reales.</p><p class="mt-4">Este es un texto adicional para probar la funcionalidad de scroll en el contenedor del capítulo. Si el contenido es más largo que el espacio visible, debería aparecer una barra de desplazamiento vertical para poder navegar por todo el texto sin que la página principal se mueva o el logo se superponga con el contenido. Esta es una prueba clave para asegurar la robustez de la interfaz de usuario en diferentes escenarios y con distintas cantidades de texto.</p>`}
+            { title: "10. Formación y Mejora Continua", content: `<p><strong>Capacitación:</strong> Realizar sesiones de formación con los consultores y empleados para asegurar que todos estén al tanto del procedimiento.</p><p class="mt-4"><strong>Simulacros de Incidentes:</strong> Llevar a cabo simulacros periódicos para evaluar la preparación del equipo y mejorar la respuesta a incidentes reales.</p>`}
         ];
         const quizQuestions = [
             { question: "¿Qué se considera un incidente de seguridad según el documento?", options: ["Un evento que compromete la confidencialidad, integridad o disponibilidad de la información.", "Una falla de hardware sin impacto en los datos.", "Un acceso autorizado a un sistema."], answer: 0 },
@@ -448,7 +446,7 @@
             { question: "Después de contener un incidente, ¿qué se debe hacer para restaurar los sistemas?", options: ["Proceder a restaurar los sistemas y datos, verificando la integridad de los backups.", "Dejar los sistemas comprometidos aislados indefinidamente.", "Instalar nuevo software sin verificar."], answer: 0 },
             { question: "¿Qué acciones se sugieren para la mejora continua en el manejo de incidentes?", options: ["Reducir la capacitación para ahorrar costos.", "Realizar sesiones de formación y simulacros periódicos.", "Mantener el procedimiento en secreto."], answer: 1 }
         ];
-
+        
         // Functions
         function showScreen(screenName) {
             Object.values(screens).forEach(screen => {
@@ -490,26 +488,43 @@
             }
         }
         
+        function calculateCourseDuration() {
+            let wordCount = 0;
+            chapters.forEach(chapter => {
+                const strippedContent = chapter.content.replace(/<[^>]*>/g, '');
+                wordCount += strippedContent.split(/\s+/).length;
+            });
+            // Tasa de lectura promedio de 200 palabras por minuto
+            const readingTimeInMinutes = wordCount / 200;
+            const extraTime = readingTimeInMinutes * 0.10;
+            const totalDuration = readingTimeInMinutes + extraTime;
+            
+            // Sumar tiempo estimado para el quiz (2 minutos por pregunta)
+            const quizTime = quizQuestions.length * 2;
+            const finalDuration = totalDuration + quizTime;
+            return Math.ceil(finalDuration);
+        }
+        
         function startProgressTimer() {
             if (timeUpdateInterval) clearInterval(timeUpdateInterval);
             
             courseStartTime = Date.now();
-            timeProgress.textContent = '0:00 / 20:00';
+            timeProgress.textContent = `0:00 / ${totalCourseTime}:00`;
             
             timeUpdateInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - courseStartTime) / 1000);
-                const remaining = totalCourseTime - elapsed;
+                const remaining = totalCourseTime * 60 - elapsed;
                 
                 if (remaining <= 0) {
                     clearInterval(timeUpdateInterval);
-                    timeProgress.textContent = '20:00 / 20:00';
+                    timeProgress.textContent = `${totalCourseTime}:00 / ${totalCourseTime}:00`;
                     return;
                 }
                 
-                const mins = Math.floor(remaining / 60);
-                const secs = remaining % 60;
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
                 timeProgress.textContent = 
-                    `${mins}:${secs < 10 ? '0' : ''}${secs} / 20:00`;
+                    `${mins}:${secs < 10 ? '0' : ''}${secs} / ${totalCourseTime}:00`;
             }, 1000);
         }
         
@@ -631,7 +646,7 @@
         function renderQuestion() {
             const q = quizQuestions[currentQuestionIndex];
             quizContent.innerHTML = `
-                <p class="font-semibold text-xl text-center text-gray-200 mb-6">${q.question}</p>
+                <p class="font-semibold text-xl text-center text-gray-200 mb-6">${currentQuestionIndex + 1}. ${q.question}</p>
                 <div class="space-y-4">
                     ${q.options.map((option, index) => `
                         <button class="quiz-option" data-answer-index="${index}">
@@ -644,16 +659,11 @@
 
             document.querySelectorAll('.quiz-option').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const selectedIndex = parseInt(e.currentTarget.dataset.answerIndex);
+                    const selectedIndex = parseInt(e.currentTarget.dataset.answer-index);
                     userAnswers[currentQuestionIndex] = selectedIndex;
                     document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
                     e.currentTarget.classList.add('selected');
                     updateQuizNavigation();
-                    setTimeout(() => {
-                        if (currentQuestionIndex < quizQuestions.length - 1) {
-                            nextQuestionBtn.click();
-                        }
-                    }, 300);
                 });
             });
 
@@ -662,16 +672,21 @@
             }
 
             updateQuizNavigation();
+            updateQuizProgressBar();
         }
 
         function updateQuizNavigation() {
-            quizProgress.textContent = `Pregunta ${currentQuestionIndex + 1} de ${quizQuestions.length}`;
             prevQuestionBtn.classList.toggle('hidden', currentQuestionIndex === 0);
             const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
-            nextQuestionBtn.classList.toggle('hidden', isLastQuestion);
+            nextQuestionBtn.classList.toggle('hidden', isLastQuestion || userAnswers[currentQuestionIndex] === null);
             submitQuizBtn.classList.toggle('hidden', !isLastQuestion || userAnswers[currentQuestionIndex] === null);
         }
 
+        function updateQuizProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+            quizProgressBar.style.width = `${progress}%`;
+        }
+        
         function submitQuiz() {
             let correctAnswers = 0;
             userAnswers.forEach((answer, index) => {
@@ -702,31 +717,35 @@
         }
 
         function initializeApp() {
-            // Load voices first
             if ('speechSynthesis' in window) {
                 loadAndSetVoice();
                 if (speechSynthesis.onvoiceschanged !== undefined) {
                     speechSynthesis.onvoiceschanged = loadAndSetVoice;
                 }
             }
-
-            currentUser = loadUserData();
+            
             const urlParams = new URLSearchParams(window.location.search);
-
-            if (urlParams.get('admin') === 'true') {
+            const adminMode = urlParams.get('admin') === 'true';
+            
+            if (adminMode) {
                 showScreen('admin');
                 loadApprovedUsers();
-            } else if (currentUser) {
-                if (currentUser.approved) {
-                    showScreen('diploma');
-                    updateDiplomaContent();
-                } else {
-                    showScreen('course');
-                    currentChapterIndex = currentUser.progress || 0;
-                    loadChapter();
-                }
             } else {
-                showScreen('login');
+                currentUser = loadUserData();
+                if (currentUser) {
+                    if (currentUser.approved) {
+                        showScreen('diploma');
+                        updateDiplomaContent();
+                    } else {
+                        showScreen('course');
+                        currentChapterIndex = currentUser.progress || 0;
+                        loadChapter();
+                    }
+                } else {
+                    totalCourseTime = calculateCourseDuration();
+                    courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
+                    showScreen('login');
+                }
             }
         }
         
@@ -832,7 +851,6 @@
         
         function downloadResourcePdf() {
             try {
-                // Abrir PDF en nueva pestaña
                 window.open('./Procedimiento_Reporte_Incidentes.pdf', '_blank');
             } catch (error) {
                 showMessage('Error al abrir el PDF del curso', 'error');
@@ -844,6 +862,8 @@
             e.preventDefault();
             currentUser = { name: nameInput.value.trim(), surname: surnameInput.value.trim(), email: emailInput.value.trim(), progress: 0, quizScore: null, completedDate: null, approved: false };
             saveUserData(currentUser);
+            welcomeMessage.textContent = `Bienvenido, ${currentUser.name}`;
+            timeIndicator.classList.add('hidden');
             showScreen('course');
             loadChapter();
             showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
@@ -862,7 +882,12 @@
         });
 
         prevQuestionBtn.addEventListener('click', () => { if(currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } });
-        nextQuestionBtn.addEventListener('click', () => { if(currentQuestionIndex < quizQuestions.length - 1) { currentQuestionIndex++; renderQuestion(); } });
+        nextQuestionBtn.addEventListener('click', () => { 
+            if(userAnswers[currentQuestionIndex] !== null && currentQuestionIndex < quizQuestions.length - 1) { 
+                currentQuestionIndex++; 
+                renderQuestion(); 
+            }
+        });
         submitQuizBtn.addEventListener('click', submitQuiz);
         restartQuizBtn.addEventListener('click', startQuiz);
         diplomaBtn.addEventListener('click', () => { showScreen('diploma'); updateDiplomaContent(); });
@@ -874,16 +899,6 @@
         window.addEventListener('beforeunload', () => {
             if (currentUser) {
                 saveUserData(currentUser);
-            }
-        });
-        
-        // Navegación con teclado
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' && !nextBtn.disabled) {
-                nextBtn.click();
-            }
-            if (e.key === ' ' && screens.course.classList.contains('hidden')) {
-                listenBtn.click();
             }
         });
         
