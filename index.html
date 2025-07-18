@@ -386,12 +386,15 @@
     </main>
 
     <script>
+        // --- START: CORRECTION ---
         // Configuración de Supabase
         const SUPABASE_URL = 'https://zaxyokejvwupwmbhenso.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_-o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpheHlva2Vqdnd1cHdtYmhlbnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg2NjM5NDgsImV4cCI6MjAzNDIzOTk0OH0.o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd-y-g9c_YmGk_Y'; // NOTE: It's generally safer to use the anon key directly.
 
-        let supabase; // Declarar la variable globalmente
-
+        // Initialize the Supabase client once, using the global 'supabase' object from the CDN
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- END: CORRECTION ---
+        
         // DOM Elements
         const screens = {
             login: document.getElementById('login-screen'),
@@ -407,7 +410,7 @@
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
         const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password'); // Nuevo campo de contraseña
+        const passwordInput = document.getElementById('password');
         const chapterNumberDisplay = document.getElementById('chapter-number');
         const progressBar = document.getElementById('progress-bar');
         const chapterTitleDisplay = document.getElementById('chapter-title');
@@ -435,7 +438,7 @@
         const diplomaLoading = document.getElementById('diploma-loading');
 
         // State
-        let currentUser = null; // Ahora almacenará el objeto de usuario de Supabase y sus datos de progreso
+        let currentUser = null;
         let currentChapterIndex = 0;
         let currentQuestionIndex = 0;
         let speechQueue = [];
@@ -443,7 +446,7 @@
         let selectedVoice = null;
         let userAnswers = new Array(5).fill(null);
 
-        // Data
+        // Data (Course content remains the same)
         const chapters = [
             { title: "1. Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que compromete la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software maliciosa que afecten la seguridad de los sistemas.</li></ul>`},
             { title: "2. Notificación Inmediata", content: `<p><strong>Responsabilidad de Notificación:</strong> El consultor que detecte el incidente debe notificarlo inmediatamente a su supervisor directo y al equipo de seguridad de la información de Blatorh Group.</p><p class="mt-4"><strong>Canales de Notificación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Correo electrónico:</strong> Enviar un correo al equipo de seguridad de la información con el asunto "Reporte de Incidente de Seguridad" y los detalles del incidente.</li><li><strong>Teléfono o mensajería interna:</strong> Utilizar los medios de comunicación internos para asegurarse de que el equipo de seguridad reciba la notificación lo antes posible.</li></ul>`},
@@ -479,19 +482,15 @@
         function showMessage(message, type) {
             messageText.textContent = message;
             messageBox.className = `fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            messageBox.classList.remove('hidden');
             setTimeout(() => { messageBox.classList.add('hidden'); }, 4000);
         }
 
-        /**
-         * Guarda o actualiza el progreso del usuario en Supabase.
-         * Utiliza upsert para insertar si no existe o actualizar si ya existe.
-         * @param {object} user - Objeto de usuario con los datos a guardar.
-         */
         async function saveUserProgressToSupabase(user) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('users_progress')
                 .upsert({ 
-                    id: user.id, // El ID de Supabase Auth
+                    id: user.id,
                     name: user.name,
                     surname: user.surname,
                     email: user.email,
@@ -499,29 +498,24 @@
                     quiz_score: user.quizScore,
                     completed_date: user.completedDate,
                     approved: user.approved
-                }, { onConflict: 'id' }); // Conflictar por el ID de Supabase Auth
+                }, { onConflict: 'id' });
 
             if (error) {
                 console.error('Error guardando progreso:', error.message);
                 showMessage('Error guardando progreso.', 'error');
             } else {
-                console.log('Progreso guardado:', data);
+                console.log('Progreso guardado.');
             }
         }
 
-        /**
-         * Carga el progreso del usuario desde Supabase.
-         * @param {string} userId - El ID del usuario autenticado en Supabase.
-         * @returns {object|null} - El objeto de usuario con su progreso o null si no se encuentra.
-         */
         async function loadUserProgressFromSupabase(userId) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('users_progress')
                 .select('*')
                 .eq('id', userId)
                 .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 es "no rows found"
+            if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found"
                 console.error('Error cargando progreso:', error.message);
                 showMessage('Error cargando progreso.', 'error');
                 return null;
@@ -534,8 +528,6 @@
             progressBar.style.width = `${progress}%`;
             if (currentUser) {
                 currentUser.progress = currentChapterIndex;
-                // No se guarda inmediatamente en Supabase aquí para evitar llamadas excesivas.
-                // Se guardará al finalizar el curso o al salir de la página.
             }
         }
         
@@ -545,15 +537,12 @@
                 const strippedContent = chapter.content.replace(/<[^>]*>/g, '');
                 wordCount += strippedContent.split(/\s+/).length;
             });
-            // Tasa de lectura promedio de 200 palabras por minuto
             const readingTimeInMinutes = wordCount / 200;
-            const extraTime = readingTimeInMinutes * 0.10; // 10% extra para pausas
+            const extraTime = readingTimeInMinutes * 0.10;
             const totalContentDuration = readingTimeInMinutes + extraTime;
-            
-            // Sumar tiempo estimado para el quiz (ej. 1 minuto por pregunta para leer y responder)
             const quizTime = quizQuestions.length * 1; 
             const finalDuration = totalContentDuration + quizTime;
-            return Math.ceil(finalDuration); // Redondear hacia arriba al minuto más cercano
+            return Math.ceil(finalDuration);
         }
         
         function loadChapter() {
@@ -576,7 +565,6 @@
         
         function loadAndSetVoice() {
             const voices = window.speechSynthesis.getVoices();
-            // Prioritize female Argentinian Spanish voice
             let voicePriority1 = voices.find(voice => voice.lang === 'es-AR' && (voice.name.includes('Female') || voice.name.includes('Femenino')));
             let voicePriority2 = voices.find(voice => voice.lang === 'es-AR');
             let voicePriority3 = voices.find(voice => voice.lang === 'es-ES' && (voice.name.includes('Female') || voice.name.includes('Mujer')));
@@ -608,7 +596,6 @@
                 if (isScrollable && element) {
                     const elementRect = element.getBoundingClientRect();
                     const containerRect = container.getBoundingClientRect();
-                    // Scroll only if the element is not fully visible
                     if (elementRect.top < containerRect.top || elementRect.bottom > containerRect.bottom) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
@@ -620,7 +607,6 @@
         }
 
         function handleListen() {
-            // Robust stop functionality
             if (window.speechSynthesis.speaking) {
                 wasManuallyStopped = true;
                 speechQueue = [];
@@ -632,14 +618,12 @@
             listenBtn.classList.remove('pulsing-button');
             listenBtn.textContent = "Detener";
             
-            // Build a clean queue of utterances
             speechQueue = [];
             const elementsToRead = [chapterTitleDisplay, ...chapterContentDisplay.children];
             
             elementsToRead.forEach(element => {
                 const text = element.textContent.trim();
                 if (text) {
-                    // Split element text into sentences for natural pausing
                     const sentences = text.match(/[^.!?]+[.!?]*/g) || [];
                     sentences.forEach(sentenceText => {
                         const trimmedSentence = sentenceText.trim();
@@ -717,7 +701,7 @@
                 currentUser.quizScore = score;
                 currentUser.completedDate = new Date().toLocaleDateString('es-AR');
                 currentUser.approved = score >= 80;
-                await saveUserProgressToSupabase(currentUser); // Guardar el resultado en Supabase
+                await saveUserProgressToSupabase(currentUser);
             }
             showResultScreen(score);
         }
@@ -737,9 +721,6 @@
         }
 
         async function initializeApp() {
-            // Inicializar Supabase aquí para asegurar que esté definido
-            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
             if ('speechSynthesis' in window) {
                 loadAndSetVoice();
                 if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -754,26 +735,14 @@
                 showScreen('admin');
                 loadApprovedUsers();
             } else {
-                // Escuchar cambios en el estado de autenticación de Supabase
-                supabase.auth.onAuthStateChange(async (event, session) => {
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
                     if (session) {
-                        // Usuario logueado
                         const { user } = session;
                         const userDataFromDB = await loadUserProgressFromSupabase(user.id);
                         
                         if (userDataFromDB) {
-                            currentUser = { 
-                                id: user.id, 
-                                name: userDataFromDB.name, 
-                                surname: userDataFromDB.surname, 
-                                email: userDataFromDB.email, 
-                                progress: userDataFromDB.progress, 
-                                quizScore: userDataFromDB.quiz_score, 
-                                completedDate: userDataFromDB.completed_date, 
-                                approved: userDataFromDB.approved 
-                            };
+                            currentUser = { ...userDataFromDB };
                         } else {
-                            // Si el usuario se acaba de registrar y no tiene datos de progreso en la DB
                             currentUser = { 
                                 id: user.id, 
                                 name: user.user_metadata.name || '', 
@@ -784,7 +753,7 @@
                                 completedDate: null, 
                                 approved: false 
                             };
-                            await saveUserProgressToSupabase(currentUser); // Guardar el registro inicial
+                            await saveUserProgressToSupabase(currentUser);
                         }
 
                         if (currentUser.approved) {
@@ -798,12 +767,11 @@
                         showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
 
                     } else {
-                        // No hay usuario logueado
                         currentUser = null;
                         showScreen('login');
                         const totalCourseTime = calculateCourseDuration();
                         courseDurationEstimate.textContent = `Tiempo estimado: ${totalCourseTime} minutos`;
-                        welcomeTitle.textContent = "Bienvenido a la Capacitación"; // Restablecer título
+                        welcomeTitle.textContent = "Bienvenido a la Capacitación";
                     }
                 });
             }
@@ -838,24 +806,16 @@
         
         async function restartCourse(fullRestart = true) {
              if (currentUser && fullRestart) {
-                // Cerrar sesión en Supabase Auth
-                const { error } = await supabase.auth.signOut();
+                const { error } = await supabaseClient.auth.signOut();
                 if (error) {
                     console.error('Error al cerrar sesión:', error.message);
                     showMessage('Error al cerrar sesión.', 'error');
                 }
              }
-             // La función initializeApp se encargará de mostrar la pantalla de login
-             // y recalcular el tiempo estimado al detectar que no hay sesión.
         }
         
         async function loadApprovedUsers() {
-            // NOTA IMPORTANTE: Para que esta función muestre *todos* los usuarios aprobados
-            // en el panel de administración, necesitarás ajustar las políticas de RLS
-            // en tu tabla `users_progress` en Supabase para permitir el SELECT a un rol
-            // o usuario administrador específico. La política actual solo permite
-            // a los usuarios ver sus propios registros.
-            const { data: users, error } = await supabase
+            const { data: users, error } = await supabaseClient
                 .from('users_progress')
                 .select('*')
                 .eq('approved', true);
@@ -887,9 +847,6 @@
         }
         
         function exportApprovedUsersToCsv() {
-            // NOTA: Esta función exportará solo los datos que el usuario actual puede ver
-            // según las políticas de RLS de Supabase. Para exportar todos los datos,
-            // la función loadApprovedUsers debe ser capaz de acceder a ellos.
             const users = Array.from(approvedUsersTableBody.rows).map(row => ({
                 name: row.cells[0].textContent,
                 surname: row.cells[1].textContent,
@@ -936,8 +893,7 @@
             const email = emailInput.value.trim();
             const password = passwordInput.value.trim();
 
-            // Intentar registrar o iniciar sesión
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
@@ -950,23 +906,18 @@
 
             if (error) {
                 if (error.message.includes('User already registered')) {
-                    // Si el usuario ya está registrado, intentar iniciar sesión
-                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
                         email: email,
                         password: password,
                     });
                     if (signInError) {
                         console.error('Error al iniciar sesión:', signInError.message);
                         showMessage(`Error al iniciar sesión: ${signInError.message}`, 'error');
-                    } else {
-                        // La lógica de onAuthStateChange manejará la redirección y carga de datos
                     }
                 } else {
                     console.error('Error al registrar usuario:', error.message);
                     showMessage(`Error al registrar: ${error.message}`, 'error');
                 }
-            } else if (data.user) {
-                // Registro exitoso, la lógica de onAuthStateChange manejará la redirección y carga de datos
             }
         });
 
@@ -993,12 +944,12 @@
         restartQuizBtn.addEventListener('click', startQuiz);
         diplomaBtn.addEventListener('click', () => { showScreen('diploma'); updateDiplomaContent(); });
         downloadDiplomaBtn.addEventListener('click', downloadDiploma);
-        restartCourseBtn.addEventListener('click', () => restartCourse(true)); // fullRestart = true para cerrar sesión
+        restartCourseBtn.addEventListener('click', () => restartCourse(true));
         exportCsvBtn.addEventListener('click', exportApprovedUsersToCsv);
         
-        // Guardar progreso al salir (solo si hay un usuario autenticado)
         window.addEventListener('beforeunload', async () => {
-            if (currentUser && supabase.auth.getSession()) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (currentUser && session) {
                 await saveUserProgressToSupabase(currentUser);
             }
         });
