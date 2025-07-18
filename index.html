@@ -738,7 +738,7 @@
 
         async function initializeApp() {
             // Inicializar Supabase aquí para asegurar que esté definido
-            supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             if ('speechSynthesis' in window) {
                 loadAndSetVoice();
