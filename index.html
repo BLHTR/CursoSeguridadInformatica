@@ -25,6 +25,11 @@
                 box-shadow: 0 0 20px rgba(197, 179, 88, 0.7);
             }
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         html {
             height: 100%;
@@ -44,9 +49,14 @@
             width: 100%;
             max-width: 1100px;
             margin: 0 auto;
-            /* Reduced top padding by ~1.5cm */
-            padding: 0.5rem 2rem;
+            padding: 0.5rem 1rem;
             flex-shrink: 0;
+        }
+        
+        @media (min-width: 768px) {
+            header {
+                padding: 0.5rem 2rem;
+            }
         }
 
         .logo {
@@ -56,13 +66,26 @@
 
         .app-container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 95vw;
             margin: 0 auto;
-            padding: 0 2rem 2rem 2rem;
+            padding: 0 1rem 1rem;
             flex-grow: 1;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+        }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                max-width: 85vw;
+                padding: 0 1rem 2rem;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 1100px;
+                padding: 0 2rem 2rem;
+            }
         }
         
         .main-content-area {
@@ -73,11 +96,11 @@
             align-items: center;
         }
         .card {
-            width: 100%; /* Card takes full width of its container */
+            width: 100%;
             background-color: rgba(29, 43, 74, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid #2a3f6a;
-            @apply rounded-2xl shadow-2xl p-8 md:p-12 transition-all duration-500;
+            @apply rounded-2xl shadow-2xl p-6 md:p-8 lg:p-12 transition-all duration-500;
         }
         .btn-primary {
             background-color: #c5b358;
@@ -103,10 +126,17 @@
         }
         
         #chapter-content {
-            max-height: 45vh; /* Increased max height */
-            overflow-y: auto; /* Enable vertical scroll if content overflows */
-            padding-right: 1rem; /* Add space for the scrollbar */
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 0.5rem;
             scroll-behavior: smooth;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @media (min-height: 700px) {
+            #chapter-content {
+                max-height: 60vh;
+            }
         }
 
         /* Custom Scrollbar for Webkit browsers */
@@ -135,7 +165,8 @@
         .hidden { display: none; }
         .screen {
             width: 100%;
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transition: opacity 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), 
+                       transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         .screen.hidden {
             position: absolute;
@@ -147,28 +178,58 @@
         /* Diploma specific styles */
         #diploma-content {
             font-family: 'Times New Roman', serif;
-            padding: 50px;
+            padding: 40px;
             text-align: center;
             border: 10px solid #0E1C36;
             background-color: #fdfdfd;
             color: #000000;
             position: relative;
         }
-        #diploma-content h1 { font-size: 3em; margin-bottom: 20px; color: #0E1C36; }
-        #diploma-content p { font-size: 1.3em; margin-bottom: 15px; }
-        #diploma-content .signature-line { margin-top: 60px; border-top: 2px solid #000; width: 60%; margin-left: auto; margin-right: auto; padding-top: 5px; }
-        #diploma-content .blatorh-signature { font-weight: bold; font-size: 1.2em; }
-        #diploma-content .blatorh-logo { width: 220px; height: auto; margin: 20px auto; }
+        @media (min-width: 768px) {
+            #diploma-content {
+                padding: 50px;
+            }
+        }
+        #diploma-content h1 { font-size: 2.5em; margin-bottom: 20px; color: #0E1C36; }
+        @media (min-width: 768px) {
+            #diploma-content h1 { font-size: 3em; }
+        }
+        #diploma-content p { font-size: 1.1em; margin-bottom: 15px; }
+        @media (min-width: 768px) {
+            #diploma-content p { font-size: 1.3em; }
+        }
+        #diploma-content .signature-line { margin-top: 40px; border-top: 2px solid #000; width: 60%; margin-left: auto; margin-right: auto; padding-top: 5px; }
+        #diploma-content .blatorh-signature { font-weight: bold; font-size: 1.1em; }
+        @media (min-width: 768px) {
+            #diploma-content .blatorh-signature { font-size: 1.2em; }
+        }
+        #diploma-content .blatorh-logo { width: 180px; height: auto; margin: 15px auto; }
+        @media (min-width: 768px) {
+            #diploma-content .blatorh-logo { width: 220px; margin: 20px auto; }
+        }
+        
+        /* Time progress indicator */
+        .time-indicator {
+            @apply inline-flex items-center bg-blue-900/50 px-4 py-2 rounded-full text-sm;
+        }
     </style>
 </head>
 <body class="antialiased">
     
     <header>
-        <img src="http://googleusercontent.com/file_content/0" alt="BlatoRH Logo" class="logo">
+        <img src="./blatorh.png" alt="BlatoRH Logo" class="logo">
     </header>
 
     <main class="app-container">
         <div class="main-content-area">
+
+            <!-- Loading overlay for diploma -->
+            <div id="diploma-loading" class="hidden absolute inset-0 bg-black/70 z-50 flex items-center justify-center">
+                <div class="text-center p-6 bg-gray-800 rounded-xl">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+                    <p class="text-white">Generando diploma...</p>
+                </div>
+            </div>
 
             <!-- Message Box -->
             <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 hidden" role="alert">
@@ -179,7 +240,17 @@
             <!-- Login/Registration Screen -->
             <div id="login-screen" class="card screen">
                 <h2 class="text-3xl font-bold mb-2 text-center">Bienvenido a la Capacitación</h2>
-                <p class="text-center text-gray-300 mb-8">Procedimiento de Reporte de Incidentes</p>
+                <p class="text-center text-gray-300 mb-4">Procedimiento de Reporte de Incidentes</p>
+                
+                <div class="text-center mb-6">
+                    <div class="time-indicator">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Tiempo estimado: 20 minutos</span>
+                    </div>
+                </div>
+                
                 <form id="login-form" class="space-y-6">
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-300">Nombre</label>
@@ -194,7 +265,14 @@
                         <input type="email" id="email" class="input-field" required pattern=".*@blatorh\.com$">
                         <p class="mt-2 text-sm text-gray-400">Debe ser una dirección de correo terminada en @blatorh.com</p>
                     </div>
-                    <button type="submit" class="btn-primary w-full !mt-10">Comenzar Curso</button>
+                    <button type="submit" class="btn-primary w-full !mt-8">Comenzar Curso</button>
+                    
+                    <button type="button" onclick="downloadResourcePdf()" class="btn-secondary w-full mt-4">
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Descargar Material (PDF)
+                    </button>
                 </form>
             </div>
 
@@ -204,9 +282,15 @@
                     <h2 class="text-2xl md:text-3xl font-bold">Reporte de Incidentes de Seguridad</h2>
                     <p id="chapter-number" class="text-yellow-300 font-semibold"></p>
                 </div>
-                <div class="progress-bar-container mb-8">
+                
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-gray-400">Progreso</span>
+                    <span id="time-progress" class="text-sm text-gray-400">0:00 / 20:00</span>
+                </div>
+                <div class="progress-bar-container mb-6">
                     <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
                 </div>
+                
                 <h3 id="chapter-title" class="text-2xl font-semibold mb-4"></h3>
                 <div id="chapter-content" class="prose prose-invert max-w-none mb-8 text-gray-300 text-lg">
                     <!-- Chapter content will be loaded here -->
@@ -256,7 +340,7 @@
                         <p class="text-xl font-bold text-blue-800 mb-6">"Procedimiento para el Reporte de Incidentes de Seguridad"</p>
                         <p class="text-lg mb-2">En la fecha:</p>
                         <p class="text-xl font-semibold mb-6" id="diploma-date"></p>
-                        <img src="http://googleusercontent.com/file_content/0" alt="BlatoRH Logo" class="blatorh-logo mx-auto">
+                        <img src="./blatorh.png" alt="BlatoRH Logo" class="blatorh-logo mx-auto">
                         <div class="signature-line"></div>
                         <p class="blatorh-signature">BlatoRH Group</p>
                         <p class="text-sm">Firma Autorizada</p>
@@ -329,6 +413,8 @@
         const approvedUsersTableBody = document.getElementById('approved-users-table-body');
         const messageBox = document.getElementById('message-box');
         const messageText = document.getElementById('message-text');
+        const diplomaLoading = document.getElementById('diploma-loading');
+        const timeProgress = document.getElementById('time-progress');
 
         // State
         let currentUser = null;
@@ -337,8 +423,12 @@
         let speechQueue = [];
         let wasManuallyStopped = false;
         let selectedVoice = null;
+        let courseStartTime = null;
+        let totalCourseTime = 20 * 60; // 20 minutos en segundos
+        let timeUpdateInterval = null;
+        let userAnswers = new Array(5).fill(null);
 
-        // Data (Content is the same as previous version)
+        // Data
         const chapters = [
             { title: "1. Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que comprometa la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software malicioso que afecten la seguridad de los sistemas.</li></ul>`},
             { title: "2. Notificación Inmediata", content: `<p><strong>Responsabilidad de Notificación:</strong> El consultor que detecte el incidente debe notificarlo inmediatamente a su supervisor directo y al equipo de seguridad de la información de Blatorh Group.</p><p class="mt-4"><strong>Canales de Notificación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Correo electrónico:</strong> Enviar un correo al equipo de seguridad de la información con el asunto "Reporte de Incidente de Seguridad" y los detalles del incidente.</li><li><strong>Teléfono o mensajería interna:</strong> Utilizar los medios de comunicación internos para asegurarse de que el equipo de seguridad reciba la notificación lo antes posible.</li></ul>`},
@@ -399,6 +489,36 @@
                 saveUserData(currentUser);
             }
         }
+        
+        function startProgressTimer() {
+            if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+            
+            courseStartTime = Date.now();
+            timeProgress.textContent = '0:00 / 20:00';
+            
+            timeUpdateInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - courseStartTime) / 1000);
+                const remaining = totalCourseTime - elapsed;
+                
+                if (remaining <= 0) {
+                    clearInterval(timeUpdateInterval);
+                    timeProgress.textContent = '20:00 / 20:00';
+                    return;
+                }
+                
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                timeProgress.textContent = 
+                    `${mins}:${secs < 10 ? '0' : ''}${secs} / 20:00`;
+            }, 1000);
+        }
+        
+        function stopProgressTimer() {
+            if (timeUpdateInterval) {
+                clearInterval(timeUpdateInterval);
+                timeUpdateInterval = null;
+            }
+        }
 
         function loadChapter() {
             if (currentChapterIndex < chapters.length) {
@@ -413,7 +533,9 @@
                 listenBtn.classList.add('pulsing-button');
                 
                 updateProgressBar();
+                startProgressTimer();
             } else {
+                stopProgressTimer();
                 startQuiz();
             }
         }
@@ -462,7 +584,6 @@
             utterance.onend = speakNextInQueue;
             window.speechSynthesis.speak(utterance);
         }
-
 
         function handleListen() {
             // Robust stop functionality
@@ -617,6 +738,9 @@
         }
 
         async function downloadDiploma() {
+            diplomaLoading.classList.remove('hidden');
+            downloadDiplomaBtn.disabled = true;
+            
             const { jsPDF } = window.jspdf;
             const diplomaContent = document.getElementById('diploma-content');
             try {
@@ -627,10 +751,15 @@
                 pdf.save(`Diploma_BlatoRH_${currentUser.name}_${currentUser.surname}.pdf`);
             } catch (error) {
                 showMessage('Error al generar el diploma en PDF.', 'error');
+            } finally {
+                diplomaLoading.classList.add('hidden');
+                downloadDiplomaBtn.disabled = false;
             }
         }
         
         function restartCourse(fullRestart = true) {
+             stopProgressTimer();
+             
              if (currentUser) {
                 if (fullRestart) {
                     localStorage.removeItem('currentUser');
@@ -700,6 +829,15 @@
             link.click();
             document.body.removeChild(link);
         }
+        
+        function downloadResourcePdf() {
+            try {
+                // Abrir PDF en nueva pestaña
+                window.open('./Procedimiento_Reporte_Incidentes.pdf', '_blank');
+            } catch (error) {
+                showMessage('Error al abrir el PDF del curso', 'error');
+            }
+        }
 
         // Event Listeners
         loginForm.addEventListener('submit', (e) => {
@@ -731,6 +869,23 @@
         downloadDiplomaBtn.addEventListener('click', downloadDiploma);
         restartCourseBtn.addEventListener('click', () => restartCourse(true));
         exportCsvBtn.addEventListener('click', exportApprovedUsersToCsv);
+        
+        // Guardar progreso al salir
+        window.addEventListener('beforeunload', () => {
+            if (currentUser) {
+                saveUserData(currentUser);
+            }
+        });
+        
+        // Navegación con teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && !nextBtn.disabled) {
+                nextBtn.click();
+            }
+            if (e.key === ' ' && screens.course.classList.contains('hidden')) {
+                listenBtn.click();
+            }
+        });
         
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
