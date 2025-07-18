@@ -108,6 +108,11 @@
             background-color: #c5b358;
             @apply text-black font-bold py-3 px-8 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-yellow-300 shadow-lg;
         }
+        .btn-primary:disabled {
+            background-color: #a1955c;
+            cursor: not-allowed;
+            transform: none;
+        }
         .btn-secondary {
             background-color: #2a3f6a;
             @apply text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-800 shadow-lg;
@@ -267,11 +272,10 @@
                         <input type="email" id="email" class="input-field" required pattern=".*@blatorh\.com$">
                         <p class="mt-2 text-sm text-gray-400">Debe ser una dirección de correo terminada en @blatorh.com</p>
                     </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-300">Contraseña</label>
-                        <input type="password" id="password" class="input-field" required>
-                    </div>
-                    <button type="submit" class="btn-primary w-full !mt-8">Registrarse / Iniciar Sesión</button>
+                    <button type="submit" id="login-submit-btn" class="btn-primary w-full !mt-8">
+                        <span class="btn-text">Ingresar al Curso</span>
+                        <span class="btn-loader hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mx-auto"></span>
+                    </button>
                     
                     <button type="button" onclick="downloadResourcePdf()" class="btn-secondary w-full mt-4">
                         <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,14 +390,12 @@
     </main>
 
     <script>
-        // --- START: CORRECTION ---
         // Configuración de Supabase
         const SUPABASE_URL = 'https://zaxyokejvwupwmbhenso.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpheHlva2Vqdnd1cHdtYmhlbnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg2NjM5NDgsImV4cCI6MjAzNDIzOTk0OH0.o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd-y-g9c_YmGk_Y'; // NOTE: It's generally safer to use the anon key directly.
+        const SUPABASE_ANON_KEY = 'sb_publishable_-o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd'; 
 
         // Initialize the Supabase client once, using the global 'supabase' object from the CDN
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        // --- END: CORRECTION ---
         
         // DOM Elements
         const screens = {
@@ -405,12 +407,12 @@
             admin: document.getElementById('admin-panel'),
         };
         const loginForm = document.getElementById('login-form');
-        const welcomeTitle = document.getElementById('welcome-title');
-        const courseDurationEstimate = document.getElementById('course-duration-estimate');
+        const loginSubmitBtn = document.getElementById('login-submit-btn');
         const nameInput = document.getElementById('name');
         const surnameInput = document.getElementById('surname');
+        const welcomeTitle = document.getElementById('welcome-title');
+        const courseDurationEstimate = document.getElementById('course-duration-estimate');
         const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
         const chapterNumberDisplay = document.getElementById('chapter-number');
         const progressBar = document.getElementById('progress-bar');
         const chapterTitleDisplay = document.getElementById('chapter-title');
@@ -470,7 +472,7 @@
         // Functions
         function showScreen(screenName) {
             Object.values(screens).forEach(screen => {
-                if (!screen.classList.contains('hidden')) {
+                if (screen && !screen.classList.contains('hidden')) {
                     screen.classList.add('hidden');
                 }
             });
@@ -483,7 +485,7 @@
             messageText.textContent = message;
             messageBox.className = `fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
             messageBox.classList.remove('hidden');
-            setTimeout(() => { messageBox.classList.add('hidden'); }, 4000);
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 5000); 
         }
 
         async function saveUserProgressToSupabase(user) {
@@ -491,13 +493,13 @@
                 .from('users_progress')
                 .upsert({ 
                     id: user.id,
-                    name: user.name,
-                    surname: user.surname,
+                    name: user.name || '',
+                    surname: user.surname || '',
                     email: user.email,
-                    progress: user.progress,
-                    quiz_score: user.quizScore,
-                    completed_date: user.completedDate,
-                    approved: user.approved
+                    progress: user.progress || 0,
+                    quiz_score: user.quizScore || null,
+                    completed_date: user.completedDate || null,
+                    approved: user.approved || false
                 }, { onConflict: 'id' });
 
             if (error) {
@@ -686,7 +688,7 @@
         }
 
         function updateQuizProgressBar() {
-            const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+            const progress = ((currentQuestionIndex + 1) / chapters.length) * 100;
             quizProgressBar.style.width = `${progress}%`;
         }
         
@@ -736,24 +738,25 @@
                 loadApprovedUsers();
             } else {
                 supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                    if (session) {
+                    if (session) { // A session exists (could be anonymous or authenticated)
                         const { user } = session;
-                        const userDataFromDB = await loadUserProgressFromSupabase(user.id);
+                        let userDataFromDB = await loadUserProgressFromSupabase(user.id);
                         
                         if (userDataFromDB) {
                             currentUser = { ...userDataFromDB };
                         } else {
-                            currentUser = { 
+                           // This should not happen with the new flow, but as a fallback
+                           currentUser = { 
                                 id: user.id, 
-                                name: user.user_metadata.name || '', 
-                                surname: user.user_metadata.surname || '', 
-                                email: user.email, 
-                                progress: 0, 
-                                quizScore: null, 
-                                completedDate: null, 
-                                approved: false 
-                            };
-                            await saveUserProgressToSupabase(currentUser);
+                                email: user.email || 'anon@example.com', // Provide a fallback for anon users
+                                name: '',
+                                surname: '',
+                                progress: 0,
+                                quizScore: null,
+                                completedDate: null,
+                                approved: false
+                           };
+                           await saveUserProgressToSupabase(currentUser);
                         }
 
                         if (currentUser.approved) {
@@ -764,9 +767,8 @@
                             currentChapterIndex = currentUser.progress || 0;
                             loadChapter();
                         }
-                        showMessage(`¡Bienvenido, ${currentUser.name}!`, 'success');
 
-                    } else {
+                    } else { // No session
                         currentUser = null;
                         showScreen('login');
                         const totalCourseTime = calculateCourseDuration();
@@ -779,7 +781,7 @@
         
         function updateDiplomaContent() {
              if (currentUser) {
-                diplomaParticipantName.textContent = `${currentUser.name} ${currentUser.surname}`;
+                diplomaParticipantName.textContent = `${currentUser.name || ''} ${currentUser.surname || ''}`.trim();
                 diplomaDate.textContent = currentUser.completedDate;
             }
         }
@@ -836,8 +838,8 @@
                 const row = document.createElement('tr');
                 row.classList.add('border-b', 'border-gray-700', 'hover:bg-gray-700');
                 row.innerHTML = `
-                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.name}</td>
-                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.surname}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.name || ''}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.surname || ''}</td>
                     <td class="py-3 px-6 text-left whitespace-nowrap">${user.email}</td>
                     <td class="py-3 px-6 text-left">${user.quiz_score ? user.quiz_score.toFixed(0) + '%' : 'N/A'}</td>
                     <td class="py-3 px-6 text-left whitespace-nowrap">${user.completed_date || 'N/A'}</td>
@@ -888,36 +890,48 @@
         // Event Listeners
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            loginSubmitBtn.disabled = true;
+            loginSubmitBtn.querySelector('.btn-text').classList.add('hidden');
+            loginSubmitBtn.querySelector('.btn-loader').classList.remove('hidden');
+
             const name = nameInput.value.trim();
             const surname = surnameInput.value.trim();
             const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
 
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        name: name,
-                        surname: surname
-                    }
-                }
-            });
+            try {
+                // First, sign in anonymously to get a stable user ID
+                const { data: { user }, error: anonError } = await supabaseClient.auth.signInAnonymously();
 
-            if (error) {
-                if (error.message.includes('User already registered')) {
-                    const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
-                        email: email,
-                        password: password,
-                    });
-                    if (signInError) {
-                        console.error('Error al iniciar sesión:', signInError.message);
-                        showMessage(`Error al iniciar sesión: ${signInError.message}`, 'error');
-                    }
-                } else {
-                    console.error('Error al registrar usuario:', error.message);
-                    showMessage(`Error al registrar: ${error.message}`, 'error');
+                if (anonError) {
+                    throw anonError;
                 }
+
+                // Now that we have a user object, save the progress with the entered details
+                currentUser = {
+                    id: user.id,
+                    name: name,
+                    surname: surname,
+                    email: email, // We save the email for record-keeping, even though it's an anonymous auth
+                    progress: 0,
+                    quizScore: null,
+                    completedDate: null,
+                    approved: false
+                };
+
+                await saveUserProgressToSupabase(currentUser);
+
+                // Manually trigger the UI update to show the course
+                showScreen('course');
+                loadChapter();
+
+            } catch (err) {
+                console.error('Error en el ingreso:', err);
+                showMessage(`Error: ${err.message}`, 'error');
+            } finally {
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.querySelector('.btn-text').classList.remove('hidden');
+                loginSubmitBtn.querySelector('.btn-loader').classList.add('hidden');
             }
         });
 
@@ -933,10 +947,10 @@
             loadChapter(); 
         });
 
-        prevQuestionBtn.addEventListener('click', () => { if(currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } });
+        prevQuestionBtn.addEventListener('click', () => { if(currentQuestionIndex > 0) { currentChapterIndex--; renderQuestion(); } });
         nextQuestionBtn.addEventListener('click', () => { 
             if(userAnswers[currentQuestionIndex] !== null && currentQuestionIndex < quizQuestions.length - 1) { 
-                currentQuestionIndex++; 
+                currentChapterIndex++; 
                 renderQuestion(); 
             }
         });
