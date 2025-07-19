@@ -432,7 +432,7 @@
                     name: user.name || '',
                     surname: user.surname || '',
                     email: user.email,
-                    course_title: user.course_title, // --- START: CORRECTION ---
+                    course_title: user.course_title,
                     progress: user.progress || 0,
                     quiz_score: user.quizScore || null,
                     completed_date: user.completedDate || null,
@@ -793,10 +793,9 @@
         
         function downloadResourcePdf() {
             try {
-                // window.open('./Procedimiento_Reporte_Incidentes.pdf', '_blank');
-                showMessage('Función de descarga de material no implementada.', 'success');
+                window.open('./Procedimiento_Reporte_Incidentes.pdf', '_blank');
             } catch (error) {
-                showMessage('Error al abrir el PDF del curso', 'error');
+                showMessage('No se pudo abrir el PDF. Asegúrate de que el archivo "Procedimiento_Reporte_Incidentes.pdf" exista en la misma carpeta.', 'error');
             }
         }
 
@@ -824,14 +823,14 @@
                 }
 
                 if (existingUser) {
-                    currentUser = { ...existingUser, name, surname, email };
+                    currentUser = { ...existingUser, name, surname, email, course_title: COURSE_TITLE };
                 } else {
                     currentUser = {
                         id: crypto.randomUUID(),
                         name: name,
                         surname: surname,
                         email: email,
-                        course_title: COURSE_TITLE, // --- START: CORRECTION ---
+                        course_title: COURSE_TITLE,
                         progress: 0,
                         quizScore: null,
                         completedDate: null,
