@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curso BlatoRH Group - Versión Definitiva</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF and html2canvas for diploma generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(251, 191, 36, 0.5); }
+            50% { transform: scale(1.03); box-shadow: 0 0 24px rgba(251, 191, 36, 0.8); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a192f;
+            color: #e6f1ff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .app-container {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background-color: rgba(17, 34, 64, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(136, 146, 176, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        .btn { @apply font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900; }
+        .btn-primary { @apply bg-amber-400 text-slate-900 hover:bg-amber-300 focus:ring-amber-400 shadow-lg shadow-amber-500/20; }
+        .btn-primary:disabled { @apply bg-amber-800 text-slate-400 cursor-not-allowed transform-none shadow-none; }
+        .btn-secondary { @apply bg-slate-700 text-white hover:bg-slate-600 focus:ring-slate-500; }
+        .pulsing-button { animation: pulse-glow 2.5s infinite ease-in-out; }
+        .input-field {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            color: #e2e8f0;
+            @apply mt-2 block w-full px-4 py-3 rounded-lg shadow-sm transition-all duration-300;
+        }
+        .input-field:focus { @apply outline-none ring-2 ring-amber-400 border-amber-400 bg-slate-900; }
+        .progress-bar-container { @apply w-full bg-slate-700 rounded-full h-3 overflow-hidden; }
+        .progress-bar { @apply bg-amber-400 h-3 rounded-full transition-all duration-500 ease-out; }
+        #chapter-content { max-height: 55vh; overflow-y: auto; padding-right: 1rem; scroll-behavior: smooth; }
+        #chapter-content::-webkit-scrollbar { width: 8px; }
+        #chapter-content::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        #chapter-content::-webkit-scrollbar-thumb { background: #fbbF24; border-radius: 10px; }
+        #chapter-content::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+        .quiz-option {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            @apply flex items-center w-full text-left p-4 rounded-lg cursor-pointer hover:bg-slate-700 hover:border-amber-400 transition-all duration-200 transform hover:scale-102;
+        }
+        .quiz-option.selected { border-color: #fbbF24; background-color: #334155; transform: scale(1.02); }
+        .hidden { display: none; }
+        .screen { width: 100%; }
+
+        /* New Login Screen Styles */
+        .login-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            min-height: 100vh;
+        }
+        @media (min-width: 1024px) {
+            .login-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .login-promo {
+            background: linear-gradient(-45deg, #0a192f, #172a46, #4a0e99, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+            padding: 2rem;
+        }
+
+        /* Diploma Styles */
+        #diploma-content {
+            background-color: #fdfbf4;
+            color: #3a2d0d;
+            border: 10px solid #c5a358;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-48 0c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48-25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7z" fill="%23d4b979" fill-opacity="0.1"/%3E%3C/svg%3E');
+        }
+        .diploma-title { font-family: 'Playfair Display', serif; color: #8c6b22; }
+        .diploma-text { font-family: 'Merriweather', serif; }
+        .diploma-seal {
+            position: absolute;
+            bottom: 3.5rem;
+            right: 2.5rem;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(ellipse at center, #d4af37 0%,#b48811 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5), inset 0 0 5px rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .diploma-seal-inner {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+        }
+        .signature-line {
+            border-top: 2px solid #8c6b22;
+            width: 250px;
+            margin-top: 3rem;
+        }
+        .signature-text { font-family: 'Merriweather', serif; font-style: italic; }
+    </style>
+</head>
+<body class="antialiased">
+    
+    <header id="app-header" class="w-full max-w-5xl mx-auto p-4 md:p-6 hidden">
+        <div class="flex items-center space-x-3">
+            <svg class="h-10 w-10 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" />
+            </svg>
+            <span class="text-2xl font-bold text-white">BlatoRH Group</span>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <div class="main-content-area w-full">
+
+            <!-- Loading overlay for diploma -->
+            <div id="diploma-loading" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+                <div class="text-center p-6 bg-slate-800 rounded-xl">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mx-auto mb-4"></div>
+                    <p class="text-white">Generando diploma...</p>
+                </div>
+            </div>
+
+            <!-- Message Box -->
+            <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 hidden" role="alert">
+                <span id="message-text"></span>
+                <button onclick="document.getElementById('message-box').classList.add('hidden')" class="ml-4 font-bold">&times;</button>
+            </div>
+
+            <!-- Login/Registration Screen -->
+            <div id="login-screen" class="screen w-full min-h-screen">
+                <div class="login-grid">
+                    <div class="login-promo hidden lg:flex flex-col justify-center items-start p-12">
+                         <img src="./blatorh.png" alt="BlatoRH Logo" class="h-16 w-auto mb-8" onerror="this.src='https://placehold.co/200x64/FFFFFF/0a192f?text=BlatoRH'; this.onerror=null;">
+                        <h1 class="text-5xl font-bold text-white leading-tight mt-4">Procedimiento de Reporte de Incidentes</h1>
+                        <p class="text-slate-300 mt-4 text-lg">Tu rol es fundamental para proteger nuestra información. Esta capacitación te dará las herramientas para actuar de forma rápida y eficaz.</p>
+                    </div>
+                    <div class="flex flex-col justify-center items-center p-8 bg-slate-900/50">
+                        <div class="w-full max-w-md">
+                             <div class="text-center lg:hidden mb-8">
+                                <h2 class="text-3xl md:text-4xl font-bold text-white">BlatoRH Group</h2>
+                                <p class="mt-2 text-slate-300">Reporte de Incidentes</p>
+                             </div>
+                             <p class="text-center text-slate-300 mb-2">Ingresa tus datos para comenzar.</p>
+                             <div class="text-center mb-6">
+                                <div class="inline-flex items-center bg-slate-800/50 px-3 py-1.5 rounded-full text-sm">
+                                    <svg class="w-5 h-5 mr-2 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                                    <span id="course-duration-estimate"></span>
+                                </div>
+                             </div>
+                            <form id="login-form" class="space-y-6">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-slate-300">Nombre</label>
+                                    <input type="text" id="name" class="input-field" required>
+                                </div>
+                                <div>
+                                    <label for="surname" class="block text-sm font-medium text-slate-300">Apellido</label>
+                                    <input type="text" id="surname" class="input-field" required>
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-slate-300">Email Corporativo</label>
+                                    <input type="email" id="email" class="input-field" required pattern=".*@blatorh\.com$">
+                                </div>
+                                <button type="submit" id="login-submit-btn" class="btn btn-primary w-full !mt-8 pulsing-button">
+                                    <span class="btn-text">Ingresar al Curso</span>
+                                    <span class="btn-loader hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-slate-900 mx-auto"></span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Screen -->
+            <div id="course-screen" class="card screen hidden w-full max-w-3xl mx-auto">
+                <div class="mb-6">
+                    <p id="chapter-number" class="text-amber-400 font-semibold"></p>
+                    <h2 id="chapter-title" class="text-3xl md:text-4xl font-bold mt-1"></h2>
+                </div>
+                <div class="progress-bar-container mb-6">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="chapter-content" class="prose prose-invert max-w-none text-slate-300 text-lg leading-relaxed"></div>
+                <div class="flex flex-col sm:flex-row justify-between items-center mt-8 border-t border-slate-700 pt-6 space-y-4 sm:space-y-0">
+                    <button id="listen-btn" class="btn btn-secondary w-full sm:w-auto">Escuchar Audio</button>
+                    <button id="next-btn" class="btn btn-primary w-full sm:w-auto" disabled>Siguiente</button>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="card screen hidden w-full max-w-2xl mx-auto">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold">Evaluación Final</h2>
+                    <p class="text-slate-300 mt-1">Demuestra lo que has aprendido.</p>
+                </div>
+                <div class="progress-bar-container my-6">
+                    <div id="quiz-progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="quiz-content" class="min-h-[30vh]"></div>
+                <div id="quiz-navigation" class="flex justify-between items-center mt-8">
+                    <button id="prev-question-btn" class="btn btn-secondary">Anterior</button>
+                    <button id="next-question-btn" class="btn btn-primary">Siguiente</button>
+                </div>
+                 <button id="submit-quiz-btn" class="btn btn-primary w-full mt-8 hidden">Finalizar y Ver Resultados</button>
+            </div>
+            
+            <!-- Quiz Result Screen -->
+            <div id="result-screen" class="card screen hidden text-center w-full max-w-md mx-auto">
+                 <h2 class="text-3xl font-bold mb-4">Resultados</h2>
+                 <p class="text-6xl font-bold mb-4" id="result-score"></p>
+                 <p class="text-xl mb-8" id="result-message"></p>
+                 <div id="result-summary" class="space-y-2 text-left max-w-md mx-auto mb-8"></div>
+                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button id="restart-quiz-btn" class="btn btn-secondary">Reintentar</button>
+                    <button id="diploma-btn" class="btn btn-primary hidden">Ver Diploma</button>
+                 </div>
+            </div>
+
+            <!-- Diploma Screen -->
+            <div id="diploma-screen" class="card screen hidden w-full max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold mb-6 text-center">¡Felicitaciones, has completado el curso!</h2>
+                <div id="diploma-content-wrapper" class="p-2 bg-slate-800 rounded-lg">
+                    <div id="diploma-content">
+                        <div class="text-center">
+                            <p class="diploma-text text-xl">Certificado de Finalización</p>
+                            <h1 class="diploma-title text-5xl my-4">DIPLOMA</h1>
+                            <p class="diploma-text text-lg">Este certificado es otorgado a:</p>
+                            <p class="diploma-text text-4xl font-bold my-6" id="diploma-participant-name" style="font-family: 'Playfair Display', serif;"></p>
+                            <p class="diploma-text text-lg">Por haber completado exitosamente el curso:</p>
+                            <p class="diploma-text text-2xl font-bold my-4">"Procedimiento para el Reporte de Incidentes de Seguridad"</p>
+                            <p class="diploma-text text-lg">Otorgado en la fecha:</p>
+                            <p class="diploma-text text-xl font-semibold" id="diploma-date"></p>
+                        </div>
+                        <div class="flex justify-center mt-8">
+                            <div class="text-center">
+                                <p class="signature-text text-2xl">BlatoRH Group</p>
+                                <div class="signature-line"></div>
+                                <p class="diploma-text font-bold">Firma Autorizada</p>
+                            </div>
+                        </div>
+                        <div class="diploma-seal">
+                            <div class="diploma-seal-inner">CURSO APROBADO</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-center mt-8 space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button id="download-diploma-btn" class="btn btn-primary">Descargar Diploma (PDF)</button>
+                    <button onclick="downloadResourcePdf()" class="btn btn-secondary">Descargar Material (PDF)</button>
+                    <button id="restart-course-btn" class="btn btn-secondary">Reiniciar Curso</button>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="admin-panel" class="card screen hidden w-full max-w-4xl mx-auto">
+                 <h2 class="text-2xl font-bold mb-6 text-center">Panel de Administración</h2>
+                 <button id="export-csv-btn" class="btn btn-primary mb-4">Exportar Aprobados (CSV)</button>
+                 <div class="overflow-x-auto">
+                     <table class="min-w-full bg-slate-800 rounded-lg shadow-md">
+                         <thead class="bg-slate-700 text-slate-300 uppercase text-sm leading-normal">
+                             <tr>
+                                 <th class="py-3 px-6 text-left">Nombre</th>
+                                 <th class="py-3 px-6 text-left">Apellido</th>
+                                 <th class="py-3 px-6 text-left">Email</th>
+                                 <th class="py-3 px-6 text-left">Score</th>
+                                 <th class="py-3 px-6 text-left">Fecha</th>
+                             </tr>
+                         </thead>
+                         <tbody id="approved-users-table-body" class="text-slate-400 text-sm font-light"></tbody>
+                     </table>
+                 </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Configuración de Supabase
+        const SUPABASE_URL = 'https://zaxyokejvwupwmbhenso.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_-o7wzFrtNcEeUMwX3kFGkA_y4mbCXUd'; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const COURSE_TITLE = "Procedimiento de Reporte de Incidentes";
+
+        // DOM Elements
+        const appHeader = document.getElementById('app-header');
+        const screens = {
+            login: document.getElementById('login-screen'),
+            course: document.getElementById('course-screen'),
+            quiz: document.getElementById('quiz-screen'),
+            result: document.getElementById('result-screen'),
+            diploma: document.getElementById('diploma-screen'),
+            admin: document.getElementById('admin-panel'),
+        };
+        const loginForm = document.getElementById('login-form');
+        const loginSubmitBtn = document.getElementById('login-submit-btn');
+        const nameInput = document.getElementById('name');
+        const surnameInput = document.getElementById('surname');
+        const emailInput = document.getElementById('email');
+        const courseDurationEstimate = document.getElementById('course-duration-estimate');
+        const chapterNumberDisplay = document.getElementById('chapter-number');
+        const progressBar = document.getElementById('progress-bar');
+        const chapterTitleDisplay = document.getElementById('chapter-title');
+        const chapterContentDisplay = document.getElementById('chapter-content');
+        const listenBtn = document.getElementById('listen-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const quizProgressBar = document.getElementById('quiz-progress-bar');
+        const quizContent = document.getElementById('quiz-content');
+        const prevQuestionBtn = document.getElementById('prev-question-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const submitQuizBtn = document.getElementById('submit-quiz-btn');
+        const resultScore = document.getElementById('result-score');
+        const resultMessage = document.getElementById('result-message');
+        const resultSummary = document.getElementById('result-summary');
+        const restartQuizBtn = document.getElementById('restart-quiz-btn');
+        const diplomaBtn = document.getElementById('diploma-btn');
+        const diplomaParticipantName = document.getElementById('diploma-participant-name');
+        const diplomaDate = document.getElementById('diploma-date');
+        const downloadDiplomaBtn = document.getElementById('download-diploma-btn');
+        const restartCourseBtn = document.getElementById('restart-course-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const approvedUsersTableBody = document.getElementById('approved-users-table-body');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const diplomaLoading = document.getElementById('diploma-loading');
+
+        // State
+        let currentUser = null;
+        let currentChapterIndex = 0;
+        let currentQuestionIndex = 0;
+        let speechQueue = [];
+        let wasManuallyStopped = false;
+        let selectedVoice = null;
+        let userAnswers = new Array(5).fill(null);
+        let autoPlayTimeout = null;
+
+        // Data
+        const chapters = [
+            { title: "Identificación del Incidente", content: `<p><strong>Definición de Incidente:</strong> Un incidente de seguridad se refiere a cualquier evento que compromete la confidencialidad, integridad o disponibilidad de la información, ya sea por acceso no autorizado, pérdida de datos, fuga de información o cualquier otra amenaza.</p><p class="mt-4"><strong>Tipos de Incidentes Comunes:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Fuga de datos:</strong> Información confidencial compartida o accesible por personas no autorizadas.</li><li><strong>Acceso no autorizado:</strong> Ingreso a sistemas o información sin los permisos adecuados.</li><li><strong>Malware o ataques:</strong> Infecciones de software malicioso que afecten la seguridad de los sistemas.</li></ul>`},
+            { title: "Notificación Inmediata", content: `<p><strong>Responsabilidad de Notificación:</strong> El consultor que detecte el incidente debe notificarlo inmediatamente a su supervisor directo y al equipo de seguridad de la información de Blatorh Group.</p><p class="mt-4"><strong>Canales de Notificación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Correo electrónico:</strong> Enviar un correo al equipo de seguridad de la información con el asunto "Reporte de Incidente de Seguridad" y los detalles del incidente.</li><li><strong>Teléfono o mensajería interna:</strong> Utilizar los medios de comunicación internos para asegurarse de que el equipo de seguridad reciba la notificación lo antes posible.</li></ul>`},
+            { title: "Documentación del Incidente", content: `<p><strong>Información Requerida:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Descripción del incidente:</strong> Explicar lo sucedido, incluyendo cómo se detectó el incidente y su impacto inicial.</li><li><strong>Fecha y hora:</strong> Registrar la fecha y hora exactas en que se detectó el incidente y cuándo se notificó.</li><li><strong>Sistemas o información afectados:</strong> Detallar qué sistemas o datos se vieron comprometidos.</li><li><strong>Acciones tomadas:</strong> Describir cualquier acción inmediata tomada para mitigar el impacto del incidente.</li></ul>`},
+            { title: "Evaluación Inicial", content: `<p><strong>Responsabilidad de Evaluación:</strong> El equipo de seguridad de la información realizará una evaluación inicial para determinar la gravedad del incidente y el alcance del daño.</p><p class="mt-4"><strong>Criterios de Evaluación:</strong></p><ul class="list-disc list-inside ml-4 space-y-2"><li><strong>Gravedad:</strong> Determinar si el incidente es menor, moderado o crítico.</li><li><strong>Alcance:</strong> Identificar cuántos sistemas, datos o personas se ven afectados.</li><li><strong>Impacto:</strong> Evaluar el impacto potencial en la operación de Blatorh Group y sus clientes.</li></ul>`},
+            { title: "Respuesta y Mitigación", content: `<p><strong>Implementación de Medidas de Contención:</strong> El equipo de seguridad implementará medidas para contener el incidente y evitar que se propague o cause más daño, como desconectar sistemas o restablecer contraseñas.</p><p class="mt-4"><strong>Monitoreo:</strong> Iniciar un monitoreo constante de los sistemas para detectar actividades sospechosas adicionales.</p>`},
+            { title: "Comunicación Interna y Externa", content: `<p><strong>Informe Interno:</strong> Preparar un informe interno detallando el incidente para los líderes de Blatorh Group.</p><p class="mt-4"><strong>Notificación a Clientes:</strong> Si el incidente afecta a clientes, notificarles de manera oportuna, respetando siempre la confidencialidad.</p>`},
+            { title: "Recuperación y Restauración", content: `<p><strong>Restauración de Sistemas:</strong> Una vez contenido el incidente, proceder a restaurar los sistemas y datos a su estado normal.</p><p class="mt-4"><strong>Revisión de Backups:</strong> Verificar la integridad de los backups y, si es necesario, restaurar desde una copia de seguridad segura.</p><p class="mt-4"><strong>Validación:</strong> Asegurar que todos los sistemas vuelvan a estar operativos y sin vulnerabilidades.</p>`},
+            { title: "Análisis Post-Incidente", content: `<p><strong>Revisión y Análisis:</strong> El equipo de seguridad debe realizar una revisión completa del incidente para entender las causas raíz y cómo se puede prevenir en el futuro.</p><p class="mt-4"><strong>Lecciones Aprendidas:</strong> Documentar las lecciones aprendidas y mejorar los procedimientos y políticas de seguridad.</p>`},
+            { title: "Reporte Final y Archivo", content: `<p><strong>Elaboración de un Reporte Final:</strong> Crear un reporte final que incluya todos los detalles del incidente, desde su detección hasta la resolución.</p><p class="mt-4"><strong>Archivo Seguro:</strong> Guardar el reporte en un lugar seguro y accesible para futuras referencias y auditorías.</p>`},
+            { title: "Formación y Mejora Continua", content: `<p><strong>Capacitación:</strong> Realizar sesiones de formación con los consultores y empleados para asegurar que todos estén al tanto del procedimiento.</p><p class="mt-4"><strong>Simulacros de Incidentes:</strong> Llevar a cabo simulacros periódicos para evaluar la preparación del equipo y mejorar la respuesta a incidentes reales.</p>`}
+        ];
+        const quizQuestions = [
+            { question: "¿Qué se considera un incidente de seguridad según el documento?", options: ["Un evento que compromete la confidencialidad, integridad o disponibilidad de la información.", "Una falla de hardware sin impacto en los datos.", "Un acceso autorizado a un sistema."], answer: 0 },
+            { question: "¿A quién debe notificar inmediatamente un consultor que detecte un incidente?", options: ["Directamente al cliente.", "A su supervisor directo y al equipo de seguridad de Blatorh Group.", "A cualquier colega disponible."], answer: 1 },
+            { question: "¿Cuál es una medida de contención que el equipo de seguridad puede implementar?", options: ["Esperar a que el incidente se resuelva solo.", "Ignorar el incidente si parece menor.", "Desconectar sistemas comprometidos."], answer: 2 },
+            { question: "Después de contener un incidente, ¿qué se debe hacer para restaurar los sistemas?", options: ["Proceder a restaurar los sistemas y datos, verificando la integridad de los backups.", "Dejar los sistemas comprometidos aislados indefinidamente.", "Instalar nuevo software sin verificar."], answer: 0 },
+            { question: "¿Qué acciones se sugieren para la mejora continua en el manejo de incidentes?", options: ["Reducir la capacitación para ahorrar costos.", "Realizar sesiones de formación y simulacros periódicos.", "Mantener el procedimiento en secreto."], answer: 1 }
+        ];
+        
+        // Functions
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => {
+                if (screen && !screen.classList.contains('hidden')) screen.classList.add('hidden');
+            });
+            if (screens[screenName]) screens[screenName].classList.remove('hidden');
+            
+            if (screenName !== 'login') {
+                appHeader.classList.remove('hidden');
+            } else {
+                appHeader.classList.add('hidden');
+            }
+        }
+
+        function showMessage(message, type) {
+            messageText.textContent = message;
+            messageBox.className = `fixed top-5 left-1/2 -translate-x-1/2 mt-4 p-4 rounded-lg shadow-lg text-white z-50 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            messageBox.classList.remove('hidden');
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 5000); 
+        }
+
+        async function saveUserProgressToSupabase(user) {
+            const { data, error } = await supabaseClient
+                .from('users_progress')
+                .upsert({ 
+                    id: user.id,
+                    name: user.name || '',
+                    surname: user.surname || '',
+                    email: user.email,
+                    course_title: user.course_title,
+                    progress: user.progress || 0,
+                    quiz_score: user.quizScore || null,
+                    completed_date: user.completedDate || null,
+                    approved: user.approved || false
+                }, { onConflict: 'id' });
+
+            if (error) {
+                console.error('Error guardando progreso:', error.message);
+                showMessage('Error guardando progreso: ' + error.message, 'error');
+                throw error;
+            } else {
+                console.log('Progreso guardado.');
+            }
+        }
+
+        async function loadUserProgressFromSupabase(userId) {
+            const { data, error } = await supabaseClient
+                .from('users_progress')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error cargando progreso:', error.message);
+                showMessage('Error cargando progreso.', 'error');
+                return null;
+            }
+            return data;
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentChapterIndex + 1) / chapters.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            if (currentUser) {
+                currentUser.progress = currentChapterIndex;
+                saveUserProgressToSupabase(currentUser).catch(err => console.error("Failed to save progress on update", err));
+            }
+        }
+        
+        function calculateCourseDuration() {
+            let wordCount = 0;
+            chapters.forEach(chapter => {
+                const strippedContent = chapter.content.replace(/<[^>]*>/g, '');
+                wordCount += strippedContent.split(/\s+/).length;
+            });
+            const readingTimeInMinutes = wordCount / 200;
+            const extraTime = readingTimeInMinutes * 0.10;
+            const totalContentDuration = readingTimeInMinutes + extraTime;
+            const quizTime = quizQuestions.length * 1; 
+            const finalDuration = totalContentDuration + quizTime;
+            return Math.ceil(finalDuration);
+        }
+        
+        function loadChapter() {
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            
+            if (currentChapterIndex < chapters.length) {
+                const chapter = chapters[currentChapterIndex];
+                chapterNumberDisplay.textContent = `Capítulo ${currentChapterIndex + 1} de ${chapters.length}`;
+                chapterTitleDisplay.textContent = chapter.title;
+                chapterContentDisplay.innerHTML = chapter.content;
+                
+                nextBtn.disabled = true;
+                nextBtn.classList.remove('pulsing-button');
+                listenBtn.textContent = "Escuchar Audio";
+                
+                updateProgressBar();
+
+                autoPlayTimeout = setTimeout(() => {
+                    handleListen();
+                }, 7000);
+            } else {
+                startQuiz();
+            }
+        }
+        
+        function loadAndSetVoice() {
+            const voices = window.speechSynthesis.getVoices();
+            let voicePriority = voices.find(voice => voice.lang.startsWith('es-') && (voice.name.includes('Female') || voice.name.includes('Femenino') || voice.name.includes('Mujer')));
+            selectedVoice = voicePriority || voices.find(voice => voice.lang.startsWith('es-'));
+        }
+
+        function speakNextInQueue() {
+            if (wasManuallyStopped || speechQueue.length === 0) {
+                listenBtn.textContent = "Escuchar Audio";
+                if (!wasManuallyStopped) {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.add('pulsing-button');
+                }
+                speechQueue = [];
+                return;
+            }
+            const { utterance } = speechQueue.shift();
+            if(selectedVoice) utterance.voice = selectedVoice;
+            utterance.onend = speakNextInQueue;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function handleListen() {
+            if (autoPlayTimeout) clearTimeout(autoPlayTimeout);
+            
+            if (window.speechSynthesis.speaking) {
+                wasManuallyStopped = true;
+                speechQueue = [];
+                window.speechSynthesis.cancel();
+                return;
+            }
+            
+            wasManuallyStopped = false;
+            listenBtn.textContent = "Detener Audio";
+            
+            speechQueue = [];
+            const elementsToRead = [chapterTitleDisplay, ...chapterContentDisplay.children];
+            
+            elementsToRead.forEach(element => {
+                const text = element.textContent.trim();
+                if (text) {
+                    const sentences = text.match(/[^.!?]+[.!?]*/g) || [];
+                    sentences.forEach(sentenceText => {
+                        const trimmedSentence = sentenceText.trim();
+                        if (trimmedSentence) {
+                            const utterance = new SpeechSynthesisUtterance(trimmedSentence);
+                            utterance.lang = 'es-ES';
+                            speechQueue.push({ utterance });
+                        }
+                    });
+                }
+            });
+
+            speakNextInQueue();
+        }
+
+        function startQuiz() {
+            showScreen('quiz');
+            currentQuestionIndex = 0;
+            userAnswers = new Array(quizQuestions.length).fill(null);
+            renderQuestion();
+        }
+        
+        function renderQuestion() {
+            const q = quizQuestions[currentQuestionIndex];
+            quizContent.innerHTML = `
+                <p class="font-semibold text-xl text-center text-slate-200 mb-8">${currentQuestionIndex + 1}. ${q.question}</p>
+                <div class="flex flex-col space-y-4">
+                    ${q.options.map((option, index) => `
+                        <button class="quiz-option" data-answer-index="${index}">
+                            <span class="text-amber-400 font-bold mr-4">${String.fromCharCode(65 + index)}</span>
+                            <span class="flex-1">${option}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            document.querySelectorAll('.quiz-option').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const selectedIndex = parseInt(e.currentTarget.dataset.answerIndex);
+                    userAnswers[currentQuestionIndex] = selectedIndex;
+                    document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
+                    e.currentTarget.classList.add('selected');
+                    updateQuizNavigation();
+                });
+            });
+
+            if (userAnswers[currentQuestionIndex] !== null) {
+                const selectedBtn = quizContent.querySelector(`.quiz-option[data-answer-index="${userAnswers[currentQuestionIndex]}"]`);
+                if (selectedBtn) selectedBtn.classList.add('selected');
+            }
+
+            updateQuizNavigation();
+            updateQuizProgressBar();
+        }
+
+        function updateQuizNavigation() {
+            prevQuestionBtn.style.visibility = currentQuestionIndex === 0 ? 'hidden' : 'visible';
+            const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
+            nextQuestionBtn.classList.toggle('hidden', isLastQuestion);
+            submitQuizBtn.classList.toggle('hidden', !isLastQuestion);
+            
+            const answerSelected = userAnswers[currentQuestionIndex] !== null;
+            nextQuestionBtn.disabled = !answerSelected;
+            submitQuizBtn.disabled = !answerSelected;
+        }
+
+        function updateQuizProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+            quizProgressBar.style.width = `${progress}%`;
+        }
+        
+        async function submitQuiz() {
+            let correctAnswers = 0;
+            userAnswers.forEach((answer, index) => {
+                if (answer === quizQuestions[index].answer) correctAnswers++;
+            });
+            const score = Math.round((correctAnswers / quizQuestions.length) * 100);
+            
+            if (currentUser) {
+                currentUser.quizScore = score;
+                currentUser.completedDate = new Date().toLocaleDateString('es-AR');
+                currentUser.approved = score >= 80;
+                await saveUserProgressToSupabase(currentUser);
+            }
+            showResultScreen(score);
+        }
+        
+        function showResultScreen(score) {
+            showScreen('result');
+            resultScore.textContent = `${score}%`;
+            resultMessage.textContent = score >= 80 ? '¡Excelente! Has aprobado.' : 'Necesitas repasar. ¡Inténtalo de nuevo!';
+            diplomaBtn.classList.toggle('hidden', score < 80);
+            resultSummary.innerHTML = quizQuestions.map((q, i) => {
+                const isCorrect = userAnswers[i] === q.answer;
+                return `<div class="flex items-center text-sm ${isCorrect ? 'text-green-400' : 'text-red-400'}">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">${isCorrect ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />' : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />'}</svg>
+                    <span>Pregunta ${i+1}: ${isCorrect ? 'Correcta' : 'Incorrecta'}</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function initializeApp() {
+            if ('speechSynthesis' in window) {
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = loadAndSetVoice;
+                } else {
+                    loadAndSetVoice();
+                }
+            }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const adminMode = urlParams.get('admin') === 'true';
+            
+            if (adminMode) {
+                showScreen('admin');
+                loadApprovedUsers();
+            } else {
+                const storedUserId = localStorage.getItem('blatorh_course_userId');
+                if (storedUserId) {
+                    const userDataFromDB = await loadUserProgressFromSupabase(storedUserId);
+                    if (userDataFromDB) {
+                        currentUser = { ...userDataFromDB };
+                        if (currentUser.approved) {
+                            showScreen('diploma');
+                            updateDiplomaContent();
+                        } else {
+                            showScreen('course');
+                            currentChapterIndex = currentUser.progress || 0;
+                            loadChapter();
+                        }
+                    } else {
+                        localStorage.removeItem('blatorh_course_userId');
+                        showScreen('login');
+                    }
+                } else {
+                    showScreen('login');
+                    courseDurationEstimate.textContent = `Duración: ${calculateCourseDuration()} min`;
+                }
+            }
+        }
+        
+        function updateDiplomaContent() {
+             if (currentUser) {
+                diplomaParticipantName.textContent = `${currentUser.name || ''} ${currentUser.surname || ''}`.trim();
+                diplomaDate.textContent = currentUser.completedDate;
+            }
+        }
+
+        async function downloadDiploma() {
+            diplomaLoading.classList.remove('hidden');
+            downloadDiplomaBtn.disabled = true;
+            
+            const { jsPDF } = window.jspdf;
+            const diplomaContent = document.getElementById('diploma-content');
+            try {
+                const canvas = await html2canvas(diplomaContent, { scale: 3, backgroundColor: '#fdfbf4' });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save(`Diploma_BlatoRH_${currentUser.name}_${currentUser.surname}.pdf`);
+            } catch (error) {
+                showMessage('Error al generar el diploma en PDF.', 'error');
+            } finally {
+                diplomaLoading.classList.add('hidden');
+                downloadDiplomaBtn.disabled = false;
+            }
+        }
+        
+        async function restartCourse(fullRestart = true) {
+             if (fullRestart) {
+                localStorage.removeItem('blatorh_course_userId');
+                currentUser = null;
+                window.location.reload();
+             } else {
+                startQuiz();
+             }
+        }
+        
+        async function loadApprovedUsers() {
+            const { data: users, error } = await supabaseClient
+                .from('users_progress')
+                .select('*')
+                .eq('approved', true);
+
+            if (error) {
+                console.error('Error cargando usuarios aprobados:', error.message);
+                showMessage('Error cargando usuarios aprobados.', 'error');
+                return;
+            }
+
+            approvedUsersTableBody.innerHTML = '';
+            if (users.length === 0) {
+                approvedUsersTableBody.innerHTML = '<tr><td colspan="5" class="py-3 px-6 text-center">No hay usuarios aprobados aún.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.classList.add('border-b', 'border-slate-700', 'hover:bg-slate-700');
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.name || ''}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.surname || ''}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.email}</td>
+                    <td class="py-3 px-6 text-left">${user.quiz_score ? user.quiz_score.toFixed(0) + '%' : 'N/A'}</td>
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.completed_date || 'N/A'}</td>
+                `;
+                approvedUsersTableBody.appendChild(row);
+            });
+        }
+        
+        function exportApprovedUsersToCsv() {
+            const users = Array.from(approvedUsersTableBody.rows).map(row => ({
+                name: row.cells[0].textContent,
+                surname: row.cells[1].textContent,
+                email: row.cells[2].textContent,
+                quizScore: row.cells[3].textContent,
+                completedDate: row.cells[4].textContent
+            }));
+
+            if (users.length === 0 || (users.length === 1 && users[0].name === 'No hay usuarios aprobados aún.')) {
+                showMessage('No hay usuarios aprobados para exportar.', 'error');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Nombre,Apellido,Email,Score,Fecha de Finalización\n";
+
+            users.forEach(user => {
+                const row = [ user.name, user.surname, user.email, user.quizScore, user.completedDate ].map(item => `"${item}"`).join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "usuarios_aprobados_blatorh.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function downloadResourcePdf() {
+            try {
+                window.open('./Procedimiento_Reporte_Incidentes.pdf', '_blank');
+            } catch (error) {
+                showMessage('No se pudo abrir el PDF. Asegúrate de que el archivo "Procedimiento_Reporte_Incidentes.pdf" exista en la misma carpeta.', 'error');
+            }
+        }
+
+        // Event Listeners
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            loginSubmitBtn.disabled = true;
+            loginSubmitBtn.querySelector('.btn-text').classList.add('hidden');
+            loginSubmitBtn.querySelector('.btn-loader').classList.remove('hidden');
+
+            const name = nameInput.value.trim();
+            const surname = surnameInput.value.trim();
+            const email = emailInput.value.trim();
+
+            try {
+                const { data: existingUser, error: findError } = await supabaseClient
+                    .from('users_progress')
+                    .select('id, progress, approved')
+                    .eq('email', email)
+                    .single();
+
+                if (findError && findError.code !== 'PGRST116') {
+                    throw findError;
+                }
+
+                if (existingUser) {
+                    currentUser = { ...existingUser, name, surname, email, course_title: COURSE_TITLE };
+                } else {
+                    currentUser = {
+                        id: crypto.randomUUID(),
+                        name: name,
+                        surname: surname,
+                        email: email,
+                        course_title: COURSE_TITLE,
+                        progress: 0,
+                        quizScore: null,
+                        completedDate: null,
+                        approved: false
+                    };
+                }
+
+                await saveUserProgressToSupabase(currentUser);
+                localStorage.setItem('blatorh_course_userId', currentUser.id);
+
+                if (currentUser.approved) {
+                    showScreen('diploma');
+                    updateDiplomaContent();
+                } else {
+                    showScreen('course');
+                    currentChapterIndex = currentUser.progress || 0;
+                    loadChapter();
+                }
+
+            } catch (err) {
+                console.error('Error en el ingreso:', err);
+                showMessage(`Error: ${err.message}.`, 'error');
+            } finally {
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.querySelector('.btn-text').classList.remove('hidden');
+                loginSubmitBtn.querySelector('.btn-loader').classList.add('hidden');
+            }
+        });
+
+        listenBtn.addEventListener('click', handleListen);
+        
+        nextBtn.addEventListener('click', () => { 
+            if (window.speechSynthesis.speaking) {
+                wasManuallyStopped = true;
+                speechQueue = [];
+                window.speechSynthesis.cancel();
+            }
+            currentChapterIndex++; 
+            loadChapter(); 
+        });
+
+        prevQuestionBtn.addEventListener('click', () => { 
+            if(currentQuestionIndex > 0) { 
+                currentQuestionIndex--; 
+                renderQuestion(); 
+            } 
+        });
+        nextQuestionBtn.addEventListener('click', () => { 
+            if(userAnswers[currentQuestionIndex] !== null && currentQuestionIndex < quizQuestions.length - 1) { 
+                currentQuestionIndex++; 
+                renderQuestion(); 
+            }
+        });
+        submitQuizBtn.addEventListener('click', submitQuiz);
+        restartQuizBtn.addEventListener('click', () => restartCourse(false));
+        diplomaBtn.addEventListener('click', () => { showScreen('diploma'); updateDiplomaContent(); });
+        downloadDiplomaBtn.addEventListener('click', downloadDiploma);
+        restartCourseBtn.addEventListener('click', () => restartCourse(true));
+        exportCsvBtn.addEventListener('click', exportApprovedUsersToCsv);
+        
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
